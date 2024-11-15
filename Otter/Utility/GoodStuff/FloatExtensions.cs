@@ -27,51 +27,64 @@
 
 using System;
 
-namespace Otter.Utility.GoodStuff
+namespace Otter.Utility.GoodStuff;
+
+public static class FloatExtensions
 {
-    public static class FloatExtensions
+    /// <summary>
+    /// Maps a value in one range to the equivalent value in another range.
+    /// </summary>
+    public static float MapToRange(this float value, float range1Min, float range1Max, float range2Min, float range2Max)
     {
-        /// <summary>
-        /// Maps a value in one range to the equivalent value in another range.
-        /// </summary>
-        public static float MapToRange(this float value, float range1Min, float range1Max, float range2Min, float range2Max)
+        return MapToRange(value, range1Min, range1Max, range2Min, range2Max, true);
+    }
+
+    /// <summary>
+    /// Maps a value in one range to the equivalent value in another range.  Clamps the value to be valid within the range if clamp is specified as true.
+    /// </summary>
+    public static float MapToRange(this float value, float range1Min, float range1Max, float range2Min, float range2Max, bool clamp)
+    {
+
+        value = range2Min + ((value - range1Min) / (range1Max - range1Min) * (range2Max - range2Min));
+
+        if (clamp)
         {
-            return MapToRange(value, range1Min, range1Max, range2Min, range2Max, true);
-        }
-
-        /// <summary>
-        /// Maps a value in one range to the equivalent value in another range.  Clamps the value to be valid within the range if clamp is specified as true.
-        /// </summary>
-        public static float MapToRange(this float value, float range1Min, float range1Max, float range2Min, float range2Max, bool clamp)
-        {
-
-            value = range2Min + ((value - range1Min) / (range1Max - range1Min)) * (range2Max - range2Min);
-
-            if (clamp)
+            if (range2Min < range2Max)
             {
-                if (range2Min < range2Max)
+                if (value > range2Max)
                 {
-                    if (value > range2Max) value = range2Max;
-                    if (value < range2Min) value = range2Min;
+                    value = range2Max;
                 }
-                // Range that go negative are possible, for example from 0 to -1
-                else
+
+                if (value < range2Min)
                 {
-                    if (value > range2Min) value = range2Min;
-                    if (value < range2Max) value = range2Max;
+                    value = range2Min;
                 }
             }
-            return value;
-        }
+            // Range that go negative are possible, for example from 0 to -1
+            else
+            {
+                if (value > range2Min)
+                {
+                    value = range2Min;
+                }
 
-        /// <summary>
-        /// Converts a float into a percent value (1 => 100%)
-        /// </summary>
-        /// <param name="value"></param>
-        /// <returns></returns>
-        public static int ToPercent(this float value)
-        {
-            return Convert.ToInt32(value * 100);
+                if (value < range2Max)
+                {
+                    value = range2Max;
+                }
+            }
         }
+        return value;
+    }
+
+    /// <summary>
+    /// Converts a float into a percent value (1 => 100%)
+    /// </summary>
+    /// <param name="value"></param>
+    /// <returns></returns>
+    public static int ToPercent(this float value)
+    {
+        return Convert.ToInt32(value * 100);
     }
 }

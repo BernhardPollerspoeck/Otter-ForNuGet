@@ -1,8 +1,7 @@
-namespace Otter.Graphics
+namespace Otter.Graphics;
+
+public enum ShaderType
 {
-    public enum ShaderType
-    {
-        Vertex,
-        Fragment
-    }
+    Vertex,
+    Fragment
 }

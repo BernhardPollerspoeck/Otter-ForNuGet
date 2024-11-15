@@ -42,28 +42,28 @@ namespace CoroutineExample
         IEnumerator MainRoutine()
         {
             // Wait for 30 frames.
-            yield return Coroutine.Instance.WaitForFrames(30);
+            yield return Coroutine.WaitForFrames(30);
             // Set the next color.
             NextColor = Color.Red;
             // Move the box to the top right.
             yield return MoveBoxTo(540, 100);
 
             // Wait for 30 frames.
-            yield return Coroutine.Instance.WaitForFrames(30);
+            yield return Coroutine.WaitForFrames(30);
             // Set the next color.
             NextColor = Color.Yellow;
             // Move the box to the bottom right.
             yield return MoveBoxTo(540, 380);
 
             // Wait for 30 frames.
-            yield return Coroutine.Instance.WaitForFrames(30);
+            yield return Coroutine.WaitForFrames(30);
             // Set the next color.
             NextColor = Color.Green;
             // Move the box to the bottom left.
             yield return MoveBoxTo(100, 380);
 
             // Wait for 30 frames.
-            yield return Coroutine.Instance.WaitForFrames(30);
+            yield return Coroutine.WaitForFrames(30);
             // Set the next color.
             NextColor = Color.Cyan;
             // Move the box to the top left.

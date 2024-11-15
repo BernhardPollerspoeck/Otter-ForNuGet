@@ -2,182 +2,175 @@ using System;
 
 using Otter.Utility;
 
-namespace Otter.Components
+namespace Otter.Components;
+
+/// <summary>
+/// Component that will slowly interpolate a value toward a target using a speed and acceleration.
+/// This component can move the value and does not know about time at all.
+/// </summary>
+/// <remarks>
+/// Create a new Lerper.
+/// </remarks>
+/// <param name="value">The initial value.</param>
+/// <param name="accel">The acceleration for moving toward the target.</param>
+/// <param name="maxSpeed">The max speed for moving toward the target.</param>
+public class Lerper(float value, float accel, float maxSpeed) : Component
 {
+
+    #region Private Fields
+
+    private float targetSpeed, speed;
+    private bool endPhase = false;
+
+    #endregion
+
+    #region Public Fields
+
     /// <summary>
-    /// Component that will slowly interpolate a value toward a target using a speed and acceleration.
-    /// This component can move the value and does not know about time at all.
+    /// The acceleration for moving toward the target.
     /// </summary>
-    public class Lerper : Component
+    public float Acceleration = accel;
+
+    /// <summary>
+    /// The maximum speed for moving toward the target.
+    /// </summary>
+    public float MaxSpeed = maxSpeed;
+
+    #endregion
+
+    #region Public Properties
+
+    /// <summary>
+    /// If the Lerper has completed its movement.
+    /// </summary>
+    public bool Completed { get; private set; } = false;
+
+    /// <summary>
+    /// The current target to move toward.
+    /// </summary>
+    public float Target { get; private set; }
+
+    /// <summary>
+    /// The current value.
+    /// </summary>
+    public float Value { get; private set; } = value;
+
+    #endregion
+    #region Public Methods
+
+    /// <summary>
+    /// Set the target.
+    /// </summary>
+    /// <param name="value"></param>
+    public void SetTarget(float value)
     {
-
-        #region Private Fields
-
-        float initValue, targetSpeed, speed, distance;
-
-        bool endPhase = false;
-
-        #endregion
-
-        #region Public Fields
-
-        /// <summary>
-        /// The acceleration for moving toward the target.
-        /// </summary>
-        public float Acceleration;
-
-        /// <summary>
-        /// The maximum speed for moving toward the target.
-        /// </summary>
-        public float MaxSpeed;
-
-        #endregion
-
-        #region Public Properties
-
-        /// <summary>
-        /// If the Lerper has completed its movement.
-        /// </summary>
-        public bool Completed { get; private set; }
-
-        /// <summary>
-        /// The current target to move toward.
-        /// </summary>
-        public float Target { get; private set; }
-
-        /// <summary>
-        /// The current value.
-        /// </summary>
-        public float Value { get; private set; }
-
-        #endregion
-
-        #region Constructors
-
-        /// <summary>
-        /// Create a new Lerper.
-        /// </summary>
-        /// <param name="value">The initial value.</param>
-        /// <param name="accel">The acceleration for moving toward the target.</param>
-        /// <param name="maxSpeed">The max speed for moving toward the target.</param>
-        public Lerper(float value, float accel, float maxSpeed)
+        if (Target == value)
         {
-            initValue = value;
-            Value = value;
-            Acceleration = accel;
-            MaxSpeed = maxSpeed;
-            Completed = false;
+            return;
         }
 
-        #endregion
+        Target = value;
 
-        #region Public Methods
+        endPhase = false;
+        Completed = false;
+    }
 
-        /// <summary>
-        /// Set the target.
-        /// </summary>
-        /// <param name="value"></param>
-        public void SetTarget(float value)
+    /// <summary>
+    /// Force the current value.
+    /// </summary>
+    /// <param name="value"></param>
+    public void SetValue(float value)
+    {
+        Value = value;
+    }
+
+    /// <summary>
+    /// Update the Lerper.
+    /// </summary>
+    public override void Update()
+    {
+        base.Update();
+
+        if (Completed)
         {
-            if (Target == value) return;
-
-            Target = value;
-
-            initValue = Value;
-            endPhase = false;
-            Completed = false;
-            distance = Math.Abs(initValue - Target);
+            Value = Target;
+            return;
         }
 
-        /// <summary>
-        /// Force the current value.
-        /// </summary>
-        /// <param name="value"></param>
-        public void SetValue(float value)
-        {
-            Value = value;
-        }
+        var currentDistance = Math.Abs(Target - Value);
+        var stoppingDistance = MaxSpeed * MaxSpeed / (2 * Acceleration);
+        var earlyStopDistance = speed * speed / (2 * Acceleration);
 
-        /// <summary>
-        /// Update the Lerper.
-        /// </summary>
-        public override void Update()
+        if (!endPhase)
         {
-            base.Update();
+            targetSpeed = MaxSpeed * Math.Sign(Target - Value);
 
-            if (Completed)
+            if (currentDistance <= stoppingDistance)
             {
-                Value = Target;
-                return;
-            }
-
-            var currentDistance = Math.Abs(Target - Value);
-            var stoppingDistance = (MaxSpeed * MaxSpeed) / (2 * Acceleration);
-            var earlyStopDistance = (speed * speed) / (2 * Acceleration);
-
-            if (!endPhase)
-            {
-                targetSpeed = MaxSpeed * Math.Sign(Target - Value);
-
-                if (currentDistance <= stoppingDistance)
+                if (speed == MaxSpeed)
                 {
-                    if (speed == MaxSpeed)
+                    targetSpeed = 0;
+                    endPhase = true;
+                }
+                if (speed < MaxSpeed)
+                {
+                    if (currentDistance <= earlyStopDistance)
                     {
                         targetSpeed = 0;
                         endPhase = true;
                     }
-                    if (speed < MaxSpeed)
-                    {
-                        if (currentDistance <= earlyStopDistance)
-                        {
-                            targetSpeed = 0;
-                            endPhase = true;
-                        }
-                    }
                 }
-            }
-
-            speed = Util.Approach(speed, targetSpeed, Acceleration);
-
-            if (endPhase)
-            {
-                if (Target > Value)
-                {
-                    if (speed < Acceleration) speed = Acceleration;
-                    Value = Util.Approach(Value, Target, speed);
-                }
-                if (Target < Value)
-                {
-                    if (speed > -Acceleration) speed = -Acceleration;
-                    Value = Util.Approach(Value, Target, -speed);
-                }
-            }
-            else
-            {
-                Value += speed;
-            }
-
-            if (currentDistance <= Acceleration * 5)
-            {
-                speed = 0;
-                Completed = true;
             }
         }
 
-        #endregion
+        speed = Util.Approach(speed, targetSpeed, Acceleration);
 
-        #region Operators
-
-        public static implicit operator float(Lerper lerper)
+        if (endPhase)
         {
-            return lerper.Value;
+            if (Target > Value)
+            {
+                if (speed < Acceleration)
+                {
+                    speed = Acceleration;
+                }
+
+                Value = Util.Approach(Value, Target, speed);
+            }
+            if (Target < Value)
+            {
+                if (speed > -Acceleration)
+                {
+                    speed = -Acceleration;
+                }
+
+                Value = Util.Approach(Value, Target, -speed);
+            }
         }
-        public static implicit operator int(Lerper lerper)
+        else
         {
-            return (int)lerper.Value;
+            Value += speed;
         }
 
-        #endregion
-
+        if (currentDistance <= Acceleration * 5)
+        {
+            speed = 0;
+            Completed = true;
+        }
     }
+
+    #endregion
+
+    #region Operators
+
+    public static implicit operator float(Lerper lerper)
+    {
+        return lerper.Value;
+    }
+    public static implicit operator int(Lerper lerper)
+    {
+        return (int)lerper.Value;
+    }
+
+    #endregion
+
 }

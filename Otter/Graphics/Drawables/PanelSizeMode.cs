@@ -1,8 +1,7 @@
-namespace Otter.Graphics.Drawables
+namespace Otter.Graphics.Drawables;
+
+public enum PanelSizeMode
 {
-    public enum PanelSizeMode
-    {
-        All,
-        Inside
-    }
+    All,
+    Inside
 }

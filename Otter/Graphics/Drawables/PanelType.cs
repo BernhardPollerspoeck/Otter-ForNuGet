@@ -1,8 +1,7 @@
-namespace Otter.Graphics.Drawables
+namespace Otter.Graphics.Drawables;
+
+public enum PanelType
 {
-    public enum PanelType
-    {
-        Stretch,
-        Tile
-    }
+    Stretch,
+    Tile
 }

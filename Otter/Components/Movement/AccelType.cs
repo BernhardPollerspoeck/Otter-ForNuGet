@@ -1,11 +1,10 @@
-namespace Otter.Components.Movement
+namespace Otter.Components.Movement;
+
+/// <summary>
+/// The different acceleration types.
+/// </summary>
+public enum AccelType
 {
-    /// <summary>
-    /// The different acceleration types.
-    /// </summary>
-    public enum AccelType
-    {
-        Ground,
-        Air
-    }
+    Ground,
+    Air
 }

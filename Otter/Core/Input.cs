@@ -8,1051 +8,987 @@ using SFML.Window;
 
 using Otter.Utility;
 
-namespace Otter.Core
+namespace Otter.Core;
+
+/// <summary>
+/// Class used for managing input from the keyboard, mouse, and joysticks. Updated by the active Game.
+/// </summary>
+public class Input
 {
+
+    #region Static Fields
+
     /// <summary>
-    /// Class used for managing input from the keyboard, mouse, and joysticks. Updated by the active Game.
+    /// A reference to the current active instance.
     /// </summary>
-    public class Input
+    public static Input Instance { get; set; }
+
+    #endregion
+
+    #region Static Properties
+
+    /// <summary>
+    /// The current number of joysticks connected.
+    /// </summary>
+    public static int JoysticksConnected
     {
-
-        #region Static Fields
-
-        /// <summary>
-        /// A reference to the current active instance.
-        /// </summary>
-        public static Input Instance;
-
-        #endregion
-
-        #region Static Properties
-
-        /// <summary>
-        /// The current number of joysticks connected.
-        /// </summary>
-        public static int JoysticksConnected
+        get
         {
-            get
-            {
-                int count = 0;
-                for (uint i = 0; i < Joystick.Count; i++)
-                {
-                    if (Joystick.IsConnected(i))
-                    {
-                        count++;
-                    }
-                }
-                return count;
-            }
-        }
-
-        /// <summary>
-        /// The maximum possible amount of joysticks that can be connected.
-        /// </summary>
-        public static int JoysticksSupported
-        {
-            get
-            {
-                return (int)Joystick.Count;
-            }
-        }
-
-        #endregion
-
-        #region Static Methods
-
-        /// <summary>
-        /// Convert a char to a Key code.
-        /// </summary>
-        /// <param name="key">The char to convert into a Key.</param>
-        /// <returns>The Key.  Returns Key.Unknown if no match is found.</returns>
-        public static Key CharToKey(char key)
-        {
-            key = char.ToUpper(key);
-            switch (key)
-            {
-                case 'A': return Key.A;
-                case 'B': return Key.B;
-                case 'C': return Key.C;
-                case 'D': return Key.D;
-                case 'E': return Key.E;
-                case 'F': return Key.F;
-                case 'G': return Key.G;
-                case 'H': return Key.H;
-                case 'I': return Key.I;
-                case 'J': return Key.J;
-                case 'K': return Key.K;
-                case 'L': return Key.L;
-                case 'M': return Key.M;
-                case 'N': return Key.N;
-                case 'O': return Key.O;
-                case 'P': return Key.P;
-                case 'Q': return Key.Q;
-                case 'R': return Key.R;
-                case 'S': return Key.S;
-                case 'T': return Key.T;
-                case 'U': return Key.U;
-                case 'V': return Key.V;
-                case 'W': return Key.W;
-                case 'X': return Key.X;
-                case 'Y': return Key.Y;
-                case 'Z': return Key.Z;
-                case '0': return Key.Num0;
-                case '1': return Key.Num1;
-                case '2': return Key.Num2;
-                case '3': return Key.Num3;
-                case '4': return Key.Num4;
-                case '5': return Key.Num5;
-                case '6': return Key.Num6;
-                case '7': return Key.Num7;
-                case '8': return Key.Num8;
-                case '9': return Key.Num9;
-                case '[': return Key.LBracket;
-                case ']': return Key.RBracket;
-                case ';': return Key.SemiColon;
-                case ',': return Key.Comma;
-                case '.': return Key.Period;
-                case '/': return Key.Slash;
-                case '\\': return Key.BackSlash;
-                case '~': return Key.Tilde;
-                case '=': return Key.Equal;
-                case '+': return Key.Add;
-                case '-': return Key.Dash;
-                case ' ': return Key.Space;
-            }
-            return Key.Unknown;
-        }
-
-        /// <summary>
-        /// Get the name of the Joystick.
-        /// </summary>
-        /// <param name="id">The connection id of the Joystick.</param>
-        /// <returns>The name of the Joystick.</returns>
-        public static string GetJoystickName(int id)
-        {
-            return Joystick.GetIdentification((uint)id).Name;
-        }
-
-        /// <summary>
-        /// Get the vendor id of the Joystick.
-        /// </summary>
-        /// <param name="id">The connection id of the Joystick.</param>
-        /// <returns>The vendor id of the Joystick.</returns>
-        public static int GetJoystickVendorId(int id)
-        {
-            return (int)Joystick.GetIdentification((uint)id).VendorId;
-        }
-
-        /// <summary>
-        /// Get the product id of the Joystick.
-        /// </summary>
-        /// <param name="id">The connection id of the Joystick.</param>
-        /// <returns>The name of the Joystick.</returns>
-        public static int GetJoystickProductId(int id)
-        {
-            return (int)Joystick.GetIdentification((uint)id).ProductId;
-        }
-
-        #endregion
-
-        #region Private Fields
-
-        float mouseWheelDelta, currentMouseWheelDelta;
-
-        int
-            keysPressed,
-            currentKeysPressed,
-            prevKeysPressed,
-            mouseButtonsPressed,
-            currentMouseButtonsPressed,
-            prevMouseButtonsPressed;
-
-        List<int>
-            buttonsPressed = new List<int>(),
-            prevButtonsPressed = new List<int>();
-
-        internal bool bufferReleases = true;
-
-        Dictionary<Key, bool> activeKeys = new Dictionary<Key, bool>();
-        Dictionary<Key, bool> currentKeys = new Dictionary<Key, bool>();
-        Dictionary<Key, bool> previousKeys = new Dictionary<Key, bool>();
-
-        Dictionary<MouseButton, bool> activeMouseButtons = new Dictionary<MouseButton, bool>();
-        Dictionary<MouseButton, bool> currentMouseButtons = new Dictionary<MouseButton, bool>();
-        Dictionary<MouseButton, bool> previousMouseButtons = new Dictionary<MouseButton, bool>();
-
-        List<Dictionary<uint, bool>> activeButtons = new List<Dictionary<uint, bool>>();
-        List<Dictionary<uint, bool>> currentButtons = new List<Dictionary<uint, bool>>();
-        List<Dictionary<uint, bool>> previousButtons = new List<Dictionary<uint, bool>>();
-
-        List<Key> keyReleaseBuffer = new List<Key>();
-        List<MouseButton> mouseReleaseBuffer = new List<MouseButton>();
-        List<List<uint>> buttonReleaseBuffer = new List<List<uint>>();
-
-        Dictionary<JoyAxis, float> axisThreshold = new Dictionary<JoyAxis, float>();
-
-        Dictionary<JoyAxis, AxisSet> axisSet = new Dictionary<JoyAxis, AxisSet>();
-
-        struct AxisSet
-        {
-            public AxisButton Plus;
-            public AxisButton Minus;
-        };
-
-        int gameMouseX;
-        int gameMouseY;
-
-        int mouseDeltaBufferX;
-        int mouseDeltaBufferY;
-
-        #endregion
-
-        #region Public Fields
-
-        /// <summary>
-        /// The maximum size of the string of recent key presses.
-        /// </summary>
-        public static int KeystringSize = 500;
-
-        /// <summary>
-        /// Determines if the mouse should be locked to the center of the screen.
-        /// </summary>
-        public static bool CenteredMouse = false;
-
-        /// <summary>
-        /// The current string of keys that were pressed.
-        /// </summary>
-        public string KeyString = "";
-
-        #endregion
-
-        #region Public Properties
-
-        /// <summary>
-        /// The reference to the game that owns this class.
-        /// </summary>
-        public Game Game { get; internal set; }
-
-        /// <summary>
-        /// The last known key that was pressed.
-        /// </summary>
-        public Key LastKey { get; private set; }
-
-        /// <summary>
-        /// The last known mouse button that was pressed.
-        /// </summary>
-        public MouseButton LastMouseButton { get; private set; }
-
-        /// <summary>
-        /// The last known button pressed on each joystick.
-        /// </summary>
-        public List<int> LastButton { get; private set; }
-
-        /// <summary>
-        /// The X movement of the mouse since the last update.  Only updates if the mouse is locked inside the Game window.
-        /// </summary>
-        public int MouseDeltaX { get; private set; }
-
-        /// <summary>
-        /// The Y movement of the mouse since the last update.  Only updates if the mouse is locked inside the Game window.
-        /// </summary>
-        public int MouseDeltaY { get; private set; }
-
-        /// <summary>
-        /// The current X position of the mouse.
-        /// </summary>
-        public int MouseX
-        {
-            get
-            {
-                float pos = 0;
-
-                if (Game.LockMouseCenter)
-                {
-                    pos = gameMouseX;
-                }
-                else
-                {
-                    pos = SFML.Window.Mouse.GetPosition(Game.Window).X;
-                    pos -= Game.Surface.X - Game.Surface.ScaledWidth * 0.5f;
-                    pos /= Game.Surface.ScaleX;
-                }
-
-                return (int)pos;
-            }
-        }
-
-        /// <summary>
-        /// The current Y position of the mouse.
-        /// </summary>
-        public int MouseY
-        {
-            get
-            {
-                float pos = 0;
-
-                if (Game.LockMouseCenter)
-                {
-                    pos = gameMouseY;
-                }
-                else
-                {
-                    pos = SFML.Window.Mouse.GetPosition(Game.Window).Y;
-                    pos -= Game.Surface.Y - Game.Surface.ScaledHeight * 0.5f;
-                    pos /= Game.Surface.ScaleY;
-                }
-
-                return (int)pos;
-            }
-        }
-
-        /// <summary>
-        /// The raw X position of the mouse.  This can be set.
-        /// </summary>
-        public int MouseRawX
-        {
-            get
-            {
-                if (Game.LockMouseCenter)
-                {
-                    return gameMouseX;
-                }
-
-                return SFML.Window.Mouse.GetPosition(Game.Window).X;
-            }
-            set
-            {
-                if (Game.LockMouseCenter)
-                {
-                    gameMouseX = value;
-                }
-                else
-                {
-                    SFML.Window.Mouse.SetPosition(new Vector2i(value, MouseRawY), Game.Window);
-                }
-            }
-        }
-
-        /// <summary>
-        /// The raw Y position of the mouse.  This can be set.
-        /// </summary>
-        public int MouseRawY
-        {
-            get
-            {
-                if (Game.LockMouseCenter)
-                {
-                    return gameMouseY;
-                }
-
-                return SFML.Window.Mouse.GetPosition(Game.Window).Y;
-            }
-            set
-            {
-                if (Game.LockMouseCenter)
-                {
-                    gameMouseY = value;
-                }
-                else
-                {
-                    SFML.Window.Mouse.SetPosition(new Vector2i(MouseRawX, value), Game.Window);
-                }
-            }
-        }
-
-        /// <summary>
-        /// The X position of the mouse in screen space.
-        /// </summary>
-        public float MouseScreenX
-        {
-            get { return MouseX + Game.Scene.CameraX; }
-        }
-
-        /// <summary>
-        /// The Y position of the mouse in screen space.
-        /// </summary>
-        public float MouseScreenY
-        {
-            get { return MouseY + Game.Scene.CameraY; }
-        }
-
-        /// <summary>
-        /// The change in the mouse wheel value this update.
-        /// </summary>
-        public float MouseWheelDelta
-        {
-            get { return mouseWheelDelta; }
-        }
-
-        /// <summary>
-        /// The X position of the mouse in the game.  Use if the mouse is locked in the game window.
-        /// This can be set if the mouse is locked inside the game window.
-        /// </summary>
-        public int GameMouseX
-        {
-            get
-            {
-                return gameMouseX;
-            }
-            set
-            {
-                gameMouseX = value;
-            }
-        }
-
-        /// <summary>
-        /// The Y position of the mouse in the game.  Use if the mouse is locked in the game window.
-        /// This can be set if the mouse is locked inside the game window.
-        /// </summary>
-        public int GameMouseY
-        {
-            get
-            {
-                return gameMouseY;
-            }
-            set
-            {
-                gameMouseY = value;
-            }
-        }
-
-        #endregion
-
-        #region Constructors
-
-        internal Input(Game game)
-        {
-            Game = game;
-            Instance = this;
-            Init();
-        }
-
-        #endregion
-
-        #region Private Methods
-
-        void OnJoystickConnected(object sender, JoystickConnectEventArgs e)
-        {
-        }
-
-        void OnTextEntered(object sender, TextEventArgs e)
-        {
-            //convert unicode to ascii to check range later
-            string hexValue = (Encoding.ASCII.GetBytes(e.Unicode)[0].ToString("X"));
-            int ascii = (int.Parse(hexValue, NumberStyles.HexNumber));
-
-            if (e.Unicode == "\b")
-            {
-                if (KeyString.Length > 0)
-                {
-                    KeyString = KeyString.Remove(KeyString.Length - 1, 1);
-                }
-            }
-            else if (e.Unicode == "\r")
-            {
-                KeyString += "\n";
-            }
-            else if (ascii >= 32 && ascii < 128)
-            { //only add to keystring if actual character
-                KeyString += e.Unicode;
-            }
-        }
-
-        void OnKeyPressed(object sender, KeyEventArgs e)
-        {
-            if (Game.Debugger != null)
-            {
-                // Ignore presses from the debug toggle key.
-                if ((Key)e.Code == Game.Debugger.ToggleKey) return;
-            }
-
-            if (!activeKeys[(Key)e.Code])
-            {
-                keysPressed++;
-            }
-            activeKeys[(Key)e.Code] = true;
-            LastKey = (Key)e.Code;
-        }
-
-        void OnKeyReleased(object sender, KeyEventArgs e)
-        {
-            if (bufferReleases)
-            {
-                keyReleaseBuffer.Add((Key)e.Code);
-            }
-            else
-            {
-                activeKeys[(Key)e.Code] = false;
-            }
-            keysPressed--;
-        }
-
-        void OnMousePressed(object sender, MouseButtonEventArgs e)
-        {
-            activeMouseButtons[(MouseButton)e.Button] = true;
-            mouseButtonsPressed++;
-            LastMouseButton = (MouseButton)e.Button;
-        }
-
-        void OnMouseReleased(object sender, MouseButtonEventArgs e)
-        {
-            if (bufferReleases)
-            {
-                mouseReleaseBuffer.Add((MouseButton)e.Button);
-            }
-            else
-            {
-                activeMouseButtons[(MouseButton)e.Button] = false;
-            }
-            mouseButtonsPressed--;
-        }
-
-        void OnButtonPressed(object sender, JoystickButtonEventArgs e)
-        {
-            activeButtons[(int)e.JoystickId][e.Button] = true;
-            buttonsPressed[(int)e.JoystickId]++;
-            LastButton[(int)e.JoystickId] = (int)e.Button;
-            //Console.WriteLine("{0} pressed on joy {1}", e.Button, e.JoystickId);
-        }
-
-        void OnButtonReleased(object sender, JoystickButtonEventArgs e)
-        {
-            if (bufferReleases)
-            {
-                buttonReleaseBuffer[(int)e.JoystickId].Add(e.Button);
-            }
-            else
-            {
-                activeButtons[(int)e.JoystickId][e.Button] = false;
-            }
-            buttonsPressed[(int)e.JoystickId]--;
-        }
-
-        void OnJoystickMoved(object sender, JoystickMoveEventArgs e)
-        {
-            //Console.WriteLine("Joystick " + e.JoystickId + " moved axis " + e.Axis + " to " + e.Position);
-        }
-
-        void OnMouseWheelScrolled(object sender, MouseWheelScrollEventArgs e)
-        {
-            currentMouseWheelDelta = e.Delta;
-        }
-
-        #endregion
-
-        #region Public Methods
-
-        /// <summary>
-        /// Check if a key has been pressed this update.
-        /// </summary>
-        /// <param name="k">The key to check.</param>
-        /// <returns>True if the key has been pressed.</returns>
-        public bool KeyPressed(Key k)
-        {
-            if (k == Key.Any)
-            {
-                return keysPressed > prevKeysPressed;
-            }
-            return currentKeys[k] && !previousKeys[k];
-        }
-
-        /// <summary>
-        /// Check if a key has been pressed this update.
-        /// </summary>
-        /// <param name="c">The key to check.</param>
-        /// <returns>True if the key has been pressed.</returns>
-        public bool KeyPressed(char c)
-        {
-            return KeyPressed(CharToKey(c));
-        }
-
-        /// <summary>
-        /// Check if a key has been released this update.
-        /// </summary>
-        /// <param name="k">The key to check.</param>
-        /// <returns>True if the key has been released.</returns>
-        public bool KeyReleased(Key k)
-        {
-            if (k == Key.Any)
-            {
-                return keysPressed < prevKeysPressed;
-            }
-            return !currentKeys[k] && previousKeys[k];
-        }
-
-        /// <summary>
-        /// Check if a key has been released this update.
-        /// </summary>
-        /// <param name="c">The key to check.</param>
-        /// <returns>True if the key has been released.</returns>
-        public bool KeyReleased(char c)
-        {
-            return KeyReleased(CharToKey(c));
-        }
-
-        /// <summary>
-        /// Check if a key is currently down.
-        /// </summary>
-        /// <param name="k">The key to check.</param>
-        /// <returns>True if the key is down.</returns>
-        public bool KeyDown(Key k)
-        {
-            if (k == Key.Any)
-            {
-                return keysPressed > 0;
-            }
-            return currentKeys[k];
-        }
-
-        /// <summary>
-        /// Check if a key is currently down.
-        /// </summary>
-        /// <param name="c">The key to check.</param>
-        /// <returns>True if the key is down.</returns>
-        public bool KeyDown(char c)
-        {
-            return KeyDown(CharToKey(c));
-        }
-
-        /// <summary>
-        /// Check if a key is currently up.
-        /// </summary>
-        /// <param name="k">The key to check.</param>
-        /// <returns>True if the key is up.</returns>
-        public bool KeyUp(Key k)
-        {
-            return !KeyDown(k);
-        }
-
-        /// <summary>
-        /// Check if a key is currently up.
-        /// </summary>
-        /// <param name="c">The key to check.</param>
-        /// <returns>True if the key is up.</returns>
-        public bool KeyUp(char c)
-        {
-            return KeyUp(CharToKey(c));
-        }
-
-        /// <summary>
-        /// Check if a joystick button is pressed.
-        /// </summary>
-        /// <param name="button">The button to check.</param>
-        /// <param name="joystick">The joystick to check.</param>
-        /// <returns>True if the button is pressed.</returns>
-        public bool ButtonPressed(int button, int joystick = 0)
-        {
-            return currentButtons[joystick][(uint)button] && !previousButtons[joystick][(uint)button];
-        }
-
-        /// <summary>
-        /// Check if a joystick AxisButton is pressed.
-        /// </summary>
-        /// <param name="button">The AxisButton to check.</param>
-        /// <param name="joystick">The joystick to check.</param>
-        /// <returns>True if the button is pressed.</returns>
-        public bool ButtonPressed(AxisButton button, int joystick = 0)
-        {
-            return ButtonPressed((int)button, joystick);
-        }
-
-        /// <summary>
-        /// Check if the joystick button is released.
-        /// </summary>
-        /// <param name="button">The button to check.</param>
-        /// <param name="joystick">The joystick to check.</param>
-        /// <returns>True if the button is released.</returns>
-        public bool ButtonReleased(int button, int joystick = 0)
-        {
-            return !currentButtons[joystick][(uint)button] && previousButtons[joystick][(uint)button];
-        }
-
-        /// <summary>
-        /// Check if the joystick AxisButton is released.
-        /// </summary>
-        /// <param name="button">The AxisButton to check.</param>
-        /// <param name="joystick">The joystick to check.</param>
-        /// <returns>True if the AxisButton is released.</returns>
-        public bool ButtonReleased(AxisButton button, int joystick = 0)
-        {
-            return ButtonReleased((int)button, joystick);
-        }
-
-        /// <summary>
-        /// Check if the joystick button is down.
-        /// </summary>
-        /// <param name="button">The button to check.</param>
-        /// <param name="joystick">The joystick to check.</param>
-        /// <returns>True if the button is down.</returns>
-        public bool ButtonDown(int button, int joystick = 0)
-        {
-            return currentButtons[joystick][(uint)button];
-        }
-
-        /// <summary>
-        /// Check if the joystick AxisButton is down.
-        /// </summary>
-        /// <param name="button">The AxisButton to check.</param>
-        /// <param name="joystick">The joystick to check.</param>
-        /// <returns>True if the AxisButton is down.</returns>
-        public bool ButtonDown(AxisButton button, int joystick = 0)
-        {
-            return ButtonDown((int)button, joystick);
-        }
-
-        /// <summary>
-        /// Check if the joystick button is up.
-        /// </summary>
-        /// <param name="button">The button to check.</param>
-        /// <param name="joystick">The joystick to check.</param>
-        /// <returns>True if the button is up.</returns>
-        public bool ButtonUp(int button, int joystick = 0)
-        {
-            return !currentButtons[joystick][(uint)button];
-        }
-
-        /// <summary>
-        /// Check if the joystick button is up.
-        /// </summary>
-        /// <param name="button">The AxisButton to check.</param>
-        /// <param name="joystick">The joystick to check.</param>
-        /// <returns>True if the AxisButton is up.</returns>
-        public bool ButtonUp(AxisButton button, int joystick = 0)
-        {
-            return ButtonUp((int)button, joystick);
-        }
-
-        /// <summary>
-        /// Get the value of a joystick axis from -100 to 100.
-        /// </summary>
-        /// <param name="axis">The axis to check.</param>
-        /// <param name="joystick">The joystick to check.</param>
-        /// <returns>The axis value from -100 to 100.</returns>
-        public float GetAxis(JoyAxis axis, int joystick = 0)
-        {
-            if (Joystick.HasAxis((uint)joystick, (Joystick.Axis)axis))
-            {
-                if (axis == JoyAxis.PovY)
-                { //special case for dpad y
-                    return Joystick.GetAxisPosition((uint)joystick, (Joystick.Axis)axis) * -1;
-                }
-                return Joystick.GetAxisPosition((uint)joystick, (Joystick.Axis)axis);
-            }
-            return 0;
-        }
-
-        /// <summary>
-        /// Set the threshold for an axis to act as an AxisButton.  Defaults to 50 or one half of the joystick's total range.
-        /// </summary>
-        /// <param name="axis">The JoyAxis to set.</param>
-        /// <param name="threshold">The threshold that the axis must pass to act as a button press.</param>
-        public void SetAxisThreshold(JoyAxis axis, float threshold)
-        {
-            axisThreshold[axis] = threshold;
-        }
-
-        /// <summary>
-        /// Gets the axis threshold for an axis to act as an AxisButton.
-        /// </summary>
-        /// <param name="axis">The JoyAxis.</param>
-        public float GetAxisThreshold(JoyAxis axis)
-        {
-            return axisThreshold[axis];
-        }
-
-        /// <summary>
-        /// Check if a MouseButton is pressed.
-        /// </summary>
-        /// <param name="b">The MouseButton to check.</param>
-        /// <returns>True if the MouseButton is pressed.</returns>
-        public bool MouseButtonPressed(MouseButton b)
-        {
-            if (b == MouseButton.Any)
-            {
-                return mouseButtonsPressed > prevMouseButtonsPressed;
-            }
-            return currentMouseButtons[b] && !previousMouseButtons[b];
-        }
-
-        /// <summary>
-        /// Check if a MouseButton is pressed.
-        /// </summary>
-        /// <param name="b">The MouseButton to check.</param>
-        /// <returns>True if the MouseButton is pressed.</returns>
-        public bool MouseButtonReleased(MouseButton b)
-        {
-            if (b == MouseButton.Any)
-            {
-                return mouseButtonsPressed < prevMouseButtonsPressed;
-            }
-            return !currentMouseButtons[b] && previousMouseButtons[b];
-        }
-
-        /// <summary>
-        /// Check if a MouseButton is pressed.
-        /// </summary>
-        /// <param name="b">The MouseButton to check.</param>
-        /// <returns>True if the MouseButton is pressed.</returns>
-        public bool MouseButtonDown(MouseButton b)
-        {
-            if (b == MouseButton.Any)
-            {
-                return mouseButtonsPressed > 0;
-            }
-            return currentMouseButtons[b];
-        }
-
-        /// <summary>
-        /// Check if a MouseButton is pressed.
-        /// </summary>
-        /// <param name="b">The MouseButton to check.</param>
-        /// <returns>True if the MouseButton is pressed.</returns>
-        public bool MouseButtonUp(MouseButton b)
-        {
-            return !MouseButtonDown(b);
-        }
-
-        /// <summary>
-        /// Clear the string of recently pressed keys.
-        /// </summary>
-        public void ClearKeystring()
-        {
-            KeyString = "";
-        }
-
-        #endregion
-
-        #region Internal
-
-        internal void WindowInit()
-        {
-            Game.Window.KeyPressed += OnKeyPressed;
-            Game.Window.TextEntered += OnTextEntered;
-            Game.Window.MouseButtonPressed += OnMousePressed;
-            Game.Window.KeyReleased += OnKeyReleased;
-            Game.Window.MouseButtonReleased += OnMouseReleased;
-            Game.Window.JoystickButtonPressed += OnButtonPressed;
-            Game.Window.JoystickButtonReleased += OnButtonReleased;
-            Game.Window.JoystickConnected += OnJoystickConnected;
-            Game.Window.JoystickMoved += OnJoystickMoved;
-            Game.Window.MouseWheelScrolled += OnMouseWheelScrolled;
-        }
-
-        internal void GameMouseUpdate(int x, int y)
-        {
-            mouseDeltaBufferX += x;
-            mouseDeltaBufferY += y;
-            gameMouseX += x;
-            gameMouseY += y;
-            gameMouseX = (int)Util.Clamp(gameMouseX, 0, Game.Width);
-            gameMouseY = (int)Util.Clamp(gameMouseY, 0, Game.Height);
-        }
-
-        internal void Init()
-        {
-            LastButton = new List<int>();
-
+            var count = 0;
             for (uint i = 0; i < Joystick.Count; i++)
             {
-                activeButtons.Add(new Dictionary<uint, bool>());
-                currentButtons.Add(new Dictionary<uint, bool>());
-                previousButtons.Add(new Dictionary<uint, bool>());
-
-                for (uint j = 0; j < Joystick.ButtonCount; j++)
+                if (Joystick.IsConnected(i))
                 {
-                    activeButtons[(int)i][j] = false;
-                    currentButtons[(int)i][j] = false;
-                    previousButtons[(int)i][j] = false;
+                    count++;
                 }
-                foreach (AxisButton axisButton in Enum.GetValues(typeof(AxisButton)))
-                {
-                    activeButtons[(int)i][(uint)axisButton] = false;
-                    currentButtons[(int)i][(uint)axisButton] = false;
-                    previousButtons[(int)i][(uint)axisButton] = false;
-                }
-
-                buttonsPressed.Add(0);
-                prevButtonsPressed.Add(0);
-
-                LastButton.Add(-1);
-
-                buttonReleaseBuffer.Add(new List<uint>());
-
-                Joystick.Update();
             }
+            return count;
+        }
+    }
 
-            foreach (Key key in Enum.GetValues(typeof(Key)))
+    /// <summary>
+    /// The maximum possible amount of joysticks that can be connected.
+    /// </summary>
+    public static int JoysticksSupported => (int)Joystick.Count;
+
+    #endregion
+
+    #region Static Methods
+
+    /// <summary>
+    /// Convert a char to a Key code.
+    /// </summary>
+    /// <param name="key">The char to convert into a Key.</param>
+    /// <returns>The Key.  Returns Key.Unknown if no match is found.</returns>
+    public static Key CharToKey(char key)
+    {
+        key = char.ToUpper(key);
+        return key switch
+        {
+            'A' => Key.A,
+            'B' => Key.B,
+            'C' => Key.C,
+            'D' => Key.D,
+            'E' => Key.E,
+            'F' => Key.F,
+            'G' => Key.G,
+            'H' => Key.H,
+            'I' => Key.I,
+            'J' => Key.J,
+            'K' => Key.K,
+            'L' => Key.L,
+            'M' => Key.M,
+            'N' => Key.N,
+            'O' => Key.O,
+            'P' => Key.P,
+            'Q' => Key.Q,
+            'R' => Key.R,
+            'S' => Key.S,
+            'T' => Key.T,
+            'U' => Key.U,
+            'V' => Key.V,
+            'W' => Key.W,
+            'X' => Key.X,
+            'Y' => Key.Y,
+            'Z' => Key.Z,
+            '0' => Key.Num0,
+            '1' => Key.Num1,
+            '2' => Key.Num2,
+            '3' => Key.Num3,
+            '4' => Key.Num4,
+            '5' => Key.Num5,
+            '6' => Key.Num6,
+            '7' => Key.Num7,
+            '8' => Key.Num8,
+            '9' => Key.Num9,
+            '[' => Key.LBracket,
+            ']' => Key.RBracket,
+            ';' => Key.SemiColon,
+            ',' => Key.Comma,
+            '.' => Key.Period,
+            '/' => Key.Slash,
+            '\\' => Key.BackSlash,
+            '~' => Key.Tilde,
+            '=' => Key.Equal,
+            '+' => Key.Add,
+            '-' => Key.Dash,
+            ' ' => Key.Space,
+            _ => Key.Unknown,
+        };
+    }
+
+    /// <summary>
+    /// Get the name of the Joystick.
+    /// </summary>
+    /// <param name="id">The connection id of the Joystick.</param>
+    /// <returns>The name of the Joystick.</returns>
+    public static string GetJoystickName(int id)
+    {
+        return Joystick.GetIdentification((uint)id).Name;
+    }
+
+    /// <summary>
+    /// Get the vendor id of the Joystick.
+    /// </summary>
+    /// <param name="id">The connection id of the Joystick.</param>
+    /// <returns>The vendor id of the Joystick.</returns>
+    public static int GetJoystickVendorId(int id)
+    {
+        return (int)Joystick.GetIdentification((uint)id).VendorId;
+    }
+
+    /// <summary>
+    /// Get the product id of the Joystick.
+    /// </summary>
+    /// <param name="id">The connection id of the Joystick.</param>
+    /// <returns>The name of the Joystick.</returns>
+    public static int GetJoystickProductId(int id)
+    {
+        return (int)Joystick.GetIdentification((uint)id).ProductId;
+    }
+
+    #endregion
+
+    #region Private Fields
+
+    private float currentMouseWheelDelta;
+    private int
+        keysPressed,
+        currentKeysPressed,
+        prevKeysPressed,
+        mouseButtonsPressed,
+        currentMouseButtonsPressed,
+        prevMouseButtonsPressed;
+    private readonly List<int>
+        buttonsPressed = [],
+        prevButtonsPressed = [];
+
+    internal bool bufferReleases = true;
+    private readonly Dictionary<Key, bool> activeKeys = [];
+    private Dictionary<Key, bool> currentKeys = [];
+    private Dictionary<Key, bool> previousKeys = [];
+    private readonly Dictionary<MouseButton, bool> activeMouseButtons = [];
+    private Dictionary<MouseButton, bool> currentMouseButtons = [];
+    private Dictionary<MouseButton, bool> previousMouseButtons = [];
+    private readonly List<Dictionary<uint, bool>> activeButtons = [];
+    private readonly List<Dictionary<uint, bool>> currentButtons = [];
+    private readonly List<Dictionary<uint, bool>> previousButtons = [];
+    private readonly List<Key> keyReleaseBuffer = [];
+    private readonly List<MouseButton> mouseReleaseBuffer = [];
+    private readonly List<List<uint>> buttonReleaseBuffer = [];
+    private readonly Dictionary<JoyAxis, float> axisThreshold = [];
+    private readonly Dictionary<JoyAxis, AxisSet> axisSet = [];
+
+    private struct AxisSet
+    {
+        public AxisButton Plus;
+        public AxisButton Minus;
+    };
+
+    private int mouseDeltaBufferX;
+    private int mouseDeltaBufferY;
+
+    #endregion
+
+    #region Public Fields
+
+    /// <summary>
+    /// The maximum size of the string of recent key presses.
+    /// </summary>
+    public static int KeystringSize { get; set; } = 500;
+
+    /// <summary>
+    /// Determines if the mouse should be locked to the center of the screen.
+    /// </summary>
+    public static bool CenteredMouse { get; set; } = false;
+
+    /// <summary>
+    /// The current string of keys that were pressed.
+    /// </summary>
+    public string KeyString = "";
+
+    #endregion
+
+    #region Public Properties
+
+    /// <summary>
+    /// The reference to the game that owns this class.
+    /// </summary>
+    public Game Game { get; internal set; }
+
+    /// <summary>
+    /// The last known key that was pressed.
+    /// </summary>
+    public Key LastKey { get; private set; }
+
+    /// <summary>
+    /// The last known mouse button that was pressed.
+    /// </summary>
+    public MouseButton LastMouseButton { get; private set; }
+
+    /// <summary>
+    /// The last known button pressed on each joystick.
+    /// </summary>
+    public List<int> LastButton { get; private set; }
+
+    /// <summary>
+    /// The X movement of the mouse since the last update.  Only updates if the mouse is locked inside the Game window.
+    /// </summary>
+    public int MouseDeltaX { get; private set; }
+
+    /// <summary>
+    /// The Y movement of the mouse since the last update.  Only updates if the mouse is locked inside the Game window.
+    /// </summary>
+    public int MouseDeltaY { get; private set; }
+
+    /// <summary>
+    /// The current X position of the mouse.
+    /// </summary>
+    public int MouseX
+    {
+        get
+        {
+            float pos;
+            if (Game.LockMouseCenter)
             {
-                activeKeys.Add(key, false);
-                currentKeys.Add(key, false);
-                previousKeys.Add(key, false);
+                pos = GameMouseX;
             }
-
-            foreach (MouseButton button in Enum.GetValues(typeof(MouseButton)))
+            else
             {
-                activeMouseButtons.Add(button, false);
-                currentMouseButtons.Add(button, false);
-                previousMouseButtons.Add(button, false);
+                pos = Mouse.GetPosition(Game.Window).X;
+                pos -= Game.Surface.X - (Game.Surface.ScaledWidth * 0.5f);
+                pos /= Game.Surface.ScaleX;
             }
 
-            foreach (JoyAxis axis in Enum.GetValues(typeof(JoyAxis)))
+            return (int)pos;
+        }
+    }
+
+    /// <summary>
+    /// The current Y position of the mouse.
+    /// </summary>
+    public int MouseY
+    {
+        get
+        {
+            float pos;
+            if (Game.LockMouseCenter)
             {
-                axisThreshold.Add(axis, 0.5f);
+                pos = GameMouseY;
+            }
+            else
+            {
+                pos = Mouse.GetPosition(Game.Window).Y;
+                pos -= Game.Surface.Y - (Game.Surface.ScaledHeight * 0.5f);
+                pos /= Game.Surface.ScaleY;
             }
 
-            AxisSet ax;
+            return (int)pos;
+        }
+    }
 
-            ax.Plus = AxisButton.XPlus;
-            ax.Minus = AxisButton.XMinus;
-            axisSet.Add(JoyAxis.X, ax);
+    /// <summary>
+    /// The raw X position of the mouse.  This can be set.
+    /// </summary>
+    public int MouseRawX
+    {
+        get => Game.LockMouseCenter ? GameMouseX : Mouse.GetPosition(Game.Window).X;
+        set
+        {
+            if (Game.LockMouseCenter)
+            {
+                GameMouseX = value;
+            }
+            else
+            {
+                Mouse.SetPosition(new Vector2i(value, MouseRawY), Game.Window);
+            }
+        }
+    }
 
-            ax.Plus = AxisButton.YPlus;
-            ax.Minus = AxisButton.YMinus;
-            axisSet.Add(JoyAxis.Y, ax);
+    /// <summary>
+    /// The raw Y position of the mouse.  This can be set.
+    /// </summary>
+    public int MouseRawY
+    {
+        get => Game.LockMouseCenter ? GameMouseY : Mouse.GetPosition(Game.Window).Y;
+        set
+        {
+            if (Game.LockMouseCenter)
+            {
+                GameMouseY = value;
+            }
+            else
+            {
+                Mouse.SetPosition(new Vector2i(MouseRawX, value), Game.Window);
+            }
+        }
+    }
 
-            ax.Plus = AxisButton.ZPlus;
-            ax.Minus = AxisButton.ZMinus;
-            axisSet.Add(JoyAxis.Z, ax);
+    /// <summary>
+    /// The X position of the mouse in screen space.
+    /// </summary>
+    public float MouseScreenX => MouseX + Game.Scene.CameraX;
 
-            ax.Plus = AxisButton.RPlus;
-            ax.Minus = AxisButton.RMinus;
-            axisSet.Add(JoyAxis.R, ax);
+    /// <summary>
+    /// The Y position of the mouse in screen space.
+    /// </summary>
+    public float MouseScreenY => MouseY + Game.Scene.CameraY;
 
-            ax.Plus = AxisButton.UPlus;
-            ax.Minus = AxisButton.UMinus;
-            axisSet.Add(JoyAxis.U, ax);
+    /// <summary>
+    /// The change in the mouse wheel value this update.
+    /// </summary>
+    public float MouseWheelDelta { get; private set; }
 
-            ax.Plus = AxisButton.VPlus;
-            ax.Minus = AxisButton.VMinus;
-            axisSet.Add(JoyAxis.V, ax);
+    /// <summary>
+    /// The X position of the mouse in the game.  Use if the mouse is locked in the game window.
+    /// This can be set if the mouse is locked inside the game window.
+    /// </summary>
+    public int GameMouseX { get; set; }
 
-            ax.Plus = AxisButton.PovXPlus;
-            ax.Minus = AxisButton.PovXMinus;
-            axisSet.Add(JoyAxis.PovX, ax);
+    /// <summary>
+    /// The Y position of the mouse in the game.  Use if the mouse is locked in the game window.
+    /// This can be set if the mouse is locked inside the game window.
+    /// </summary>
+    public int GameMouseY { get; set; }
 
-            ax.Plus = AxisButton.PovYPlus;
-            ax.Minus = AxisButton.PovYMinus;
-            axisSet.Add(JoyAxis.PovY, ax);
+    #endregion
 
+    #region Constructors
+
+    internal Input(Game game)
+    {
+        Game = game;
+        Instance = this;
+        Init();
+    }
+
+    #endregion
+
+    #region Private Methods
+
+    private void OnJoystickConnected(object sender, JoystickConnectEventArgs e)
+    {
+    }
+
+    private void OnTextEntered(object sender, TextEventArgs e)
+    {
+        //convert unicode to ascii to check range later
+        var hexValue = Encoding.ASCII.GetBytes(e.Unicode)[0].ToString("X");
+        var ascii = int.Parse(hexValue, NumberStyles.HexNumber);
+
+        if (e.Unicode == "\b")
+        {
+            if (KeyString.Length > 0)
+            {
+                KeyString = KeyString.Remove(KeyString.Length - 1, 1);
+            }
+        }
+        else if (e.Unicode == "\r")
+        {
+            KeyString += "\n";
+        }
+        else if (ascii is >= 32 and < 128)
+        { //only add to keystring if actual character
+            KeyString += e.Unicode;
+        }
+    }
+
+    private void OnKeyPressed(object sender, KeyEventArgs e)
+    {
+        if (Game.Debugger != null)
+        {
+            // Ignore presses from the debug toggle key.
+            if ((Key)e.Code == Game.Debugger.ToggleKey)
+            {
+                return;
+            }
         }
 
-        internal void Update()
+        if (!activeKeys[(Key)e.Code])
         {
-            // Set instance pointer to this object.
-            Instance = this;
+            keysPressed++;
+        }
+        activeKeys[(Key)e.Code] = true;
+        LastKey = (Key)e.Code;
+    }
 
-            // Do mouse delta stuff for when the mouse is locked in the game window.
-            MouseDeltaX = mouseDeltaBufferX;
-            MouseDeltaY = mouseDeltaBufferY;
+    private void OnKeyReleased(object sender, KeyEventArgs e)
+    {
+        if (bufferReleases)
+        {
+            keyReleaseBuffer.Add((Key)e.Code);
+        }
+        else
+        {
+            activeKeys[(Key)e.Code] = false;
+        }
+        keysPressed--;
+    }
 
-            mouseDeltaBufferX = 0;
-            mouseDeltaBufferY = 0;
+    private void OnMousePressed(object sender, MouseButtonEventArgs e)
+    {
+        activeMouseButtons[(MouseButton)e.Button] = true;
+        mouseButtonsPressed++;
+        LastMouseButton = (MouseButton)e.Button;
+    }
 
-            // Force update all joysticks.
+    private void OnMouseReleased(object sender, MouseButtonEventArgs e)
+    {
+        if (bufferReleases)
+        {
+            mouseReleaseBuffer.Add((MouseButton)e.Button);
+        }
+        else
+        {
+            activeMouseButtons[(MouseButton)e.Button] = false;
+        }
+        mouseButtonsPressed--;
+    }
+
+    private void OnButtonPressed(object sender, JoystickButtonEventArgs e)
+    {
+        activeButtons[(int)e.JoystickId][e.Button] = true;
+        buttonsPressed[(int)e.JoystickId]++;
+        LastButton[(int)e.JoystickId] = (int)e.Button;
+        //Console.WriteLine("{0} pressed on joy {1}", e.Button, e.JoystickId);
+    }
+
+    private void OnButtonReleased(object sender, JoystickButtonEventArgs e)
+    {
+        if (bufferReleases)
+        {
+            buttonReleaseBuffer[(int)e.JoystickId].Add(e.Button);
+        }
+        else
+        {
+            activeButtons[(int)e.JoystickId][e.Button] = false;
+        }
+        buttonsPressed[(int)e.JoystickId]--;
+    }
+
+    private void OnJoystickMoved(object sender, JoystickMoveEventArgs e)
+    {
+        //Console.WriteLine("Joystick " + e.JoystickId + " moved axis " + e.Axis + " to " + e.Position);
+    }
+
+    private void OnMouseWheelScrolled(object sender, MouseWheelScrollEventArgs e)
+    {
+        currentMouseWheelDelta = e.Delta;
+    }
+
+    #endregion
+
+    #region Public Methods
+
+    /// <summary>
+    /// Check if a key has been pressed this update.
+    /// </summary>
+    /// <param name="k">The key to check.</param>
+    /// <returns>True if the key has been pressed.</returns>
+    public bool KeyPressed(Key k)
+    {
+        return k switch
+        {
+            Key.Any => keysPressed > prevKeysPressed,
+            _ => currentKeys[k] && !previousKeys[k]
+        };
+    }
+
+    /// <summary>
+    /// Check if a key has been pressed this update.
+    /// </summary>
+    /// <param name="c">The key to check.</param>
+    /// <returns>True if the key has been pressed.</returns>
+    public bool KeyPressed(char c)
+    {
+        return KeyPressed(CharToKey(c));
+    }
+
+    /// <summary>
+    /// Check if a key has been released this update.
+    /// </summary>
+    /// <param name="k">The key to check.</param>
+    /// <returns>True if the key has been released.</returns>
+    public bool KeyReleased(Key k)
+    {
+        return k switch
+        {
+            Key.Any => keysPressed < prevKeysPressed,
+            _ => !currentKeys[k] && previousKeys[k]
+        };
+    }
+
+    /// <summary>
+    /// Check if a key has been released this update.
+    /// </summary>
+    /// <param name="c">The key to check.</param>
+    /// <returns>True if the key has been released.</returns>
+    public bool KeyReleased(char c)
+    {
+        return KeyReleased(CharToKey(c));
+    }
+
+    /// <summary>
+    /// Check if a key is currently down.
+    /// </summary>
+    /// <param name="k">The key to check.</param>
+    /// <returns>True if the key is down.</returns>
+    public bool KeyDown(Key k)
+    {
+        return k switch
+        {
+            Key.Any => keysPressed > 0,
+            _ => currentKeys[k]
+        };
+    }
+
+    /// <summary>
+    /// Check if a key is currently down.
+    /// </summary>
+    /// <param name="c">The key to check.</param>
+    /// <returns>True if the key is down.</returns>
+    public bool KeyDown(char c)
+    {
+        return KeyDown(CharToKey(c));
+    }
+
+    /// <summary>
+    /// Check if a key is currently up.
+    /// </summary>
+    /// <param name="k">The key to check.</param>
+    /// <returns>True if the key is up.</returns>
+    public bool KeyUp(Key k)
+    {
+        return !KeyDown(k);
+    }
+
+    /// <summary>
+    /// Check if a key is currently up.
+    /// </summary>
+    /// <param name="c">The key to check.</param>
+    /// <returns>True if the key is up.</returns>
+    public bool KeyUp(char c)
+    {
+        return KeyUp(CharToKey(c));
+    }
+
+    /// <summary>
+    /// Check if a joystick button is pressed.
+    /// </summary>
+    /// <param name="button">The button to check.</param>
+    /// <param name="joystick">The joystick to check.</param>
+    /// <returns>True if the button is pressed.</returns>
+    public bool ButtonPressed(int button, int joystick = 0)
+    {
+        return currentButtons[joystick][(uint)button] && !previousButtons[joystick][(uint)button];
+    }
+
+    /// <summary>
+    /// Check if a joystick AxisButton is pressed.
+    /// </summary>
+    /// <param name="button">The AxisButton to check.</param>
+    /// <param name="joystick">The joystick to check.</param>
+    /// <returns>True if the button is pressed.</returns>
+    public bool ButtonPressed(AxisButton button, int joystick = 0)
+    {
+        return ButtonPressed((int)button, joystick);
+    }
+
+    /// <summary>
+    /// Check if the joystick button is released.
+    /// </summary>
+    /// <param name="button">The button to check.</param>
+    /// <param name="joystick">The joystick to check.</param>
+    /// <returns>True if the button is released.</returns>
+    public bool ButtonReleased(int button, int joystick = 0)
+    {
+        return !currentButtons[joystick][(uint)button] && previousButtons[joystick][(uint)button];
+    }
+
+    /// <summary>
+    /// Check if the joystick AxisButton is released.
+    /// </summary>
+    /// <param name="button">The AxisButton to check.</param>
+    /// <param name="joystick">The joystick to check.</param>
+    /// <returns>True if the AxisButton is released.</returns>
+    public bool ButtonReleased(AxisButton button, int joystick = 0)
+    {
+        return ButtonReleased((int)button, joystick);
+    }
+
+    /// <summary>
+    /// Check if the joystick button is down.
+    /// </summary>
+    /// <param name="button">The button to check.</param>
+    /// <param name="joystick">The joystick to check.</param>
+    /// <returns>True if the button is down.</returns>
+    public bool ButtonDown(int button, int joystick = 0)
+    {
+        return currentButtons[joystick][(uint)button];
+    }
+
+    /// <summary>
+    /// Check if the joystick AxisButton is down.
+    /// </summary>
+    /// <param name="button">The AxisButton to check.</param>
+    /// <param name="joystick">The joystick to check.</param>
+    /// <returns>True if the AxisButton is down.</returns>
+    public bool ButtonDown(AxisButton button, int joystick = 0)
+    {
+        return ButtonDown((int)button, joystick);
+    }
+
+    /// <summary>
+    /// Check if the joystick button is up.
+    /// </summary>
+    /// <param name="button">The button to check.</param>
+    /// <param name="joystick">The joystick to check.</param>
+    /// <returns>True if the button is up.</returns>
+    public bool ButtonUp(int button, int joystick = 0)
+    {
+        return !currentButtons[joystick][(uint)button];
+    }
+
+    /// <summary>
+    /// Check if the joystick button is up.
+    /// </summary>
+    /// <param name="button">The AxisButton to check.</param>
+    /// <param name="joystick">The joystick to check.</param>
+    /// <returns>True if the AxisButton is up.</returns>
+    public bool ButtonUp(AxisButton button, int joystick = 0)
+    {
+        return ButtonUp((int)button, joystick);
+    }
+
+    /// <summary>
+    /// Get the value of a joystick axis from -100 to 100.
+    /// </summary>
+    /// <param name="axis">The axis to check.</param>
+    /// <param name="joystick">The joystick to check.</param>
+    /// <returns>The axis value from -100 to 100.</returns>
+    public static float GetAxis(JoyAxis axis, int joystick = 0)
+    {
+        return !Joystick.HasAxis((uint)joystick, (Joystick.Axis)axis)
+            ? 0
+            : axis switch
+            {
+                JoyAxis.PovY => Joystick.GetAxisPosition((uint)joystick, (Joystick.Axis)axis) * -1,
+                _ => Joystick.GetAxisPosition((uint)joystick, (Joystick.Axis)axis)
+            };
+    }
+
+    /// <summary>
+    /// Set the threshold for an axis to act as an AxisButton.  Defaults to 50 or one half of the joystick's total range.
+    /// </summary>
+    /// <param name="axis">The JoyAxis to set.</param>
+    /// <param name="threshold">The threshold that the axis must pass to act as a button press.</param>
+    public void SetAxisThreshold(JoyAxis axis, float threshold)
+    {
+        axisThreshold[axis] = threshold;
+    }
+
+    /// <summary>
+    /// Gets the axis threshold for an axis to act as an AxisButton.
+    /// </summary>
+    /// <param name="axis">The JoyAxis.</param>
+    public float GetAxisThreshold(JoyAxis axis)
+    {
+        return axisThreshold[axis];
+    }
+
+    /// <summary>
+    /// Check if a MouseButton is pressed.
+    /// </summary>
+    /// <param name="b">The MouseButton to check.</param>
+    /// <returns>True if the MouseButton is pressed.</returns>
+    public bool MouseButtonPressed(MouseButton b)
+    {
+        return b switch
+        {
+            MouseButton.Any => mouseButtonsPressed > prevMouseButtonsPressed,
+            _ => currentMouseButtons[b] && !previousMouseButtons[b]
+        };
+    }
+
+    /// <summary>
+    /// Check if a MouseButton is pressed.
+    /// </summary>
+    /// <param name="b">The MouseButton to check.</param>
+    /// <returns>True if the MouseButton is pressed.</returns>
+    public bool MouseButtonReleased(MouseButton b)
+    {
+        return b switch
+        {
+            MouseButton.Any => mouseButtonsPressed < prevMouseButtonsPressed,
+            _ => !currentMouseButtons[b] && previousMouseButtons[b]
+        };
+    }
+
+    /// <summary>
+    /// Check if a MouseButton is pressed.
+    /// </summary>
+    /// <param name="b">The MouseButton to check.</param>
+    /// <returns>True if the MouseButton is pressed.</returns>
+    public bool MouseButtonDown(MouseButton b)
+    {
+        return b switch
+        {
+            MouseButton.Any => mouseButtonsPressed > 0,
+            _ => currentMouseButtons[b]
+        };
+    }
+
+    /// <summary>
+    /// Check if a MouseButton is pressed.
+    /// </summary>
+    /// <param name="b">The MouseButton to check.</param>
+    /// <returns>True if the MouseButton is pressed.</returns>
+    public bool MouseButtonUp(MouseButton b)
+    {
+        return !MouseButtonDown(b);
+    }
+
+    /// <summary>
+    /// Clear the string of recently pressed keys.
+    /// </summary>
+    public void ClearKeystring()
+    {
+        KeyString = "";
+    }
+
+    #endregion
+
+    #region Internal
+
+    internal void WindowInit()
+    {
+        Game.Window.KeyPressed += OnKeyPressed;
+        Game.Window.TextEntered += OnTextEntered;
+        Game.Window.MouseButtonPressed += OnMousePressed;
+        Game.Window.KeyReleased += OnKeyReleased;
+        Game.Window.MouseButtonReleased += OnMouseReleased;
+        Game.Window.JoystickButtonPressed += OnButtonPressed;
+        Game.Window.JoystickButtonReleased += OnButtonReleased;
+        Game.Window.JoystickConnected += OnJoystickConnected;
+        Game.Window.JoystickMoved += OnJoystickMoved;
+        Game.Window.MouseWheelScrolled += OnMouseWheelScrolled;
+    }
+
+    internal void GameMouseUpdate(int x, int y)
+    {
+        mouseDeltaBufferX += x;
+        mouseDeltaBufferY += y;
+        GameMouseX += x;
+        GameMouseY += y;
+        GameMouseX = (int)Util.Clamp(GameMouseX, 0, Game.Width);
+        GameMouseY = (int)Util.Clamp(GameMouseY, 0, Game.Height);
+    }
+
+    internal void Init()
+    {
+        LastButton = [];
+
+        for (uint i = 0; i < Joystick.Count; i++)
+        {
+            activeButtons.Add([]);
+            currentButtons.Add([]);
+            previousButtons.Add([]);
+
+            for (uint j = 0; j < Joystick.ButtonCount; j++)
+            {
+                activeButtons[(int)i][j] = false;
+                currentButtons[(int)i][j] = false;
+                previousButtons[(int)i][j] = false;
+            }
+            foreach (AxisButton axisButton in Enum.GetValues<AxisButton>())
+            {
+                activeButtons[(int)i][(uint)axisButton] = false;
+                currentButtons[(int)i][(uint)axisButton] = false;
+                previousButtons[(int)i][(uint)axisButton] = false;
+            }
+
+            buttonsPressed.Add(0);
+            prevButtonsPressed.Add(0);
+
+            LastButton.Add(-1);
+
+            buttonReleaseBuffer.Add([]);
+
             Joystick.Update();
+        }
 
-            // Update the previous button dictionaries.
-            previousKeys = new Dictionary<Key, bool>(currentKeys);
-            previousMouseButtons = new Dictionary<MouseButton, bool>(currentMouseButtons);
-            for (int i = 0; i < previousButtons.Count; i++)
+        foreach (Key key in Enum.GetValues<Key>())
+        {
+            activeKeys.Add(key, false);
+            currentKeys.Add(key, false);
+            previousKeys.Add(key, false);
+        }
+
+        foreach (MouseButton button in Enum.GetValues<MouseButton>())
+        {
+            activeMouseButtons.Add(button, false);
+            currentMouseButtons.Add(button, false);
+            previousMouseButtons.Add(button, false);
+        }
+
+        foreach (JoyAxis axis in Enum.GetValues<JoyAxis>())
+        {
+            axisThreshold.Add(axis, 0.5f);
+        }
+
+        AxisSet ax;
+
+        ax.Plus = AxisButton.XPlus;
+        ax.Minus = AxisButton.XMinus;
+        axisSet.Add(JoyAxis.X, ax);
+
+        ax.Plus = AxisButton.YPlus;
+        ax.Minus = AxisButton.YMinus;
+        axisSet.Add(JoyAxis.Y, ax);
+
+        ax.Plus = AxisButton.ZPlus;
+        ax.Minus = AxisButton.ZMinus;
+        axisSet.Add(JoyAxis.Z, ax);
+
+        ax.Plus = AxisButton.RPlus;
+        ax.Minus = AxisButton.RMinus;
+        axisSet.Add(JoyAxis.R, ax);
+
+        ax.Plus = AxisButton.UPlus;
+        ax.Minus = AxisButton.UMinus;
+        axisSet.Add(JoyAxis.U, ax);
+
+        ax.Plus = AxisButton.VPlus;
+        ax.Minus = AxisButton.VMinus;
+        axisSet.Add(JoyAxis.V, ax);
+
+        ax.Plus = AxisButton.PovXPlus;
+        ax.Minus = AxisButton.PovXMinus;
+        axisSet.Add(JoyAxis.PovX, ax);
+
+        ax.Plus = AxisButton.PovYPlus;
+        ax.Minus = AxisButton.PovYMinus;
+        axisSet.Add(JoyAxis.PovY, ax);
+
+    }
+
+    internal void Update()
+    {
+        // Set instance pointer to this object.
+        Instance = this;
+
+        // Do mouse delta stuff for when the mouse is locked in the game window.
+        MouseDeltaX = mouseDeltaBufferX;
+        MouseDeltaY = mouseDeltaBufferY;
+
+        mouseDeltaBufferX = 0;
+        mouseDeltaBufferY = 0;
+
+        // Force update all joysticks.
+        Joystick.Update();
+
+        // Update the previous button dictionaries.
+        previousKeys = new Dictionary<Key, bool>(currentKeys);
+        previousMouseButtons = new Dictionary<MouseButton, bool>(currentMouseButtons);
+        for (var i = 0; i < previousButtons.Count; i++)
+        {
+            previousButtons[i] = new Dictionary<uint, bool>(currentButtons[i]);
+        }
+
+        // Update the previous press counts
+        prevKeysPressed = currentKeysPressed;
+        prevMouseButtonsPressed = currentMouseButtonsPressed;
+        for (var i = 0; i < prevButtonsPressed.Count; i++)
+        {
+            prevButtonsPressed[i] = buttonsPressed[i];
+        }
+
+        // Update the current to the active keys.
+        currentKeys = new Dictionary<Key, bool>(activeKeys);
+        currentMouseButtons = new Dictionary<MouseButton, bool>(activeMouseButtons);
+        for (var i = 0; i < currentButtons.Count; i++)
+        {
+            currentButtons[i] = new Dictionary<uint, bool>(activeButtons[i]);
+        }
+
+        foreach (var k in keyReleaseBuffer)
+        {
+            activeKeys[k] = false;
+        }
+
+        currentKeysPressed = keysPressed;
+
+        keyReleaseBuffer.Clear();
+
+        foreach (var m in mouseReleaseBuffer)
+        {
+            activeMouseButtons[m] = false;
+        }
+
+        currentMouseButtonsPressed = mouseButtonsPressed;
+
+        mouseReleaseBuffer.Clear();
+
+        for (var i = 0; i < Joystick.Count; i++)
+        {
+            foreach (var b in buttonReleaseBuffer[i])
             {
-                previousButtons[i] = new Dictionary<uint, bool>(currentButtons[i]);
+                activeButtons[i][b] = false;
             }
 
-            // Update the previous press counts
-            prevKeysPressed = currentKeysPressed;
-            prevMouseButtonsPressed = currentMouseButtonsPressed;
-            for (int i = 0; i < prevButtonsPressed.Count; i++)
+            buttonReleaseBuffer[i].Clear();
+        }
+
+        // Update the Joystick axes to use as buttons
+        for (var i = 0; i < Joystick.Count; i++)
+        {
+            if (Joystick.IsConnected((uint)i))
             {
-                prevButtonsPressed[i] = buttonsPressed[i];
-            }
-
-            // Update the current to the active keys.
-            currentKeys = new Dictionary<Key, bool>(activeKeys);
-            currentMouseButtons = new Dictionary<MouseButton, bool>(activeMouseButtons);
-            for (int i = 0; i < currentButtons.Count; i++)
-            {
-                currentButtons[i] = new Dictionary<uint, bool>(activeButtons[i]);
-            }
-
-            foreach (var k in keyReleaseBuffer)
-            {
-                activeKeys[k] = false;
-            }
-
-            currentKeysPressed = keysPressed;
-
-            keyReleaseBuffer.Clear();
-
-            foreach (var m in mouseReleaseBuffer)
-            {
-                activeMouseButtons[m] = false;
-            }
-
-            currentMouseButtonsPressed = mouseButtonsPressed;
-
-            mouseReleaseBuffer.Clear();
-
-            for (int i = 0; i < Joystick.Count; i++)
-            {
-                foreach (var b in buttonReleaseBuffer[i])
+                foreach (JoyAxis axis in Enum.GetValues<JoyAxis>())
                 {
-                    activeButtons[i][b] = false;
-                }
-
-                buttonReleaseBuffer[i].Clear();
-            }
-
-            // Update the Joystick axes to use as buttons
-            for (int i = 0; i < Joystick.Count; i++)
-            {
-                if (Joystick.IsConnected((uint)i))
-                {
-                    foreach (JoyAxis axis in Enum.GetValues(typeof(JoyAxis)))
+                    var a = GetAxis(axis, i) * 0.01f;
+                    if (a >= axisThreshold[axis])
                     {
-                        float a = GetAxis(axis, i) * 0.01f;
-                        if (a >= axisThreshold[axis])
+                        if (!currentButtons[i][(uint)axisSet[axis].Plus])
                         {
-                            if (!currentButtons[i][(uint)axisSet[axis].Plus])
-                            {
-                                buttonsPressed[i]++;
-                            }
-                            currentButtons[i][(uint)axisSet[axis].Plus] = true;
+                            buttonsPressed[i]++;
                         }
-                        else
+                        currentButtons[i][(uint)axisSet[axis].Plus] = true;
+                    }
+                    else
+                    {
+                        if (currentButtons[i][(uint)axisSet[axis].Plus])
                         {
-                            if (currentButtons[i][(uint)axisSet[axis].Plus])
-                            {
-                                buttonsPressed[i]--;
-                            }
-                            currentButtons[i][(uint)axisSet[axis].Plus] = false;
+                            buttonsPressed[i]--;
                         }
+                        currentButtons[i][(uint)axisSet[axis].Plus] = false;
+                    }
 
-                        if (a <= -axisThreshold[axis])
+                    if (a <= -axisThreshold[axis])
+                    {
+                        if (!currentButtons[i][(uint)axisSet[axis].Minus])
                         {
-                            if (!currentButtons[i][(uint)axisSet[axis].Minus])
-                            {
-                                buttonsPressed[i]++;
-                            }
-                            currentButtons[i][(uint)axisSet[axis].Minus] = true;
+                            buttonsPressed[i]++;
                         }
-                        else
+                        currentButtons[i][(uint)axisSet[axis].Minus] = true;
+                    }
+                    else
+                    {
+                        if (currentButtons[i][(uint)axisSet[axis].Minus])
                         {
-                            if (currentButtons[i][(uint)axisSet[axis].Minus])
-                            {
-                                buttonsPressed[i]--;
-                            }
-                            currentButtons[i][(uint)axisSet[axis].Minus] = false;
+                            buttonsPressed[i]--;
                         }
+                        currentButtons[i][(uint)axisSet[axis].Minus] = false;
                     }
                 }
             }
-
-            mouseWheelDelta = currentMouseWheelDelta;
-            currentMouseWheelDelta = 0;
         }
 
-        #endregion
-
+        MouseWheelDelta = currentMouseWheelDelta;
+        currentMouseWheelDelta = 0;
     }
+
+    #endregion
+
 }

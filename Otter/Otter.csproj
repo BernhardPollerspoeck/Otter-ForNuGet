@@ -1,16 +1,24 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
-    <TargetFramework>netcoreapp2.2</TargetFramework>
+    <TargetFramework>net9.0</TargetFramework>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Version>0.9.1</Version>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageId>Poller-OtterFork</PackageId>
   </PropertyGroup>
-
+  
+  <ItemGroup>
+    <Compile Remove="nupkgs\**" />
+    <EmbeddedResource Remove="nupkgs\**" />
+    <None Remove="nupkgs\**" />
+  </ItemGroup>
+  
   <ItemGroup>
     <None Update="CONSOLA.TTF" CopyToOutputDirectory="PreserveNewest" />
     <None Update="otterlogo.png" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
-
+  
   <ItemGroup>
     <PackageReference Include="SFML.Net" Version="2.5.0" />
   </ItemGroup>
-
 </Project>

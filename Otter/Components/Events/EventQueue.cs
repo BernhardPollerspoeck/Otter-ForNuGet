@@ -1,87 +1,79 @@
-namespace Otter.Components.Events
+namespace Otter.Components.Events;
+
+/// <summary>
+/// A Component to manage and process queue of events.
+/// </summary>
+public class EventQueue : EventProcessor
 {
+
+    #region Public Methods
+
     /// <summary>
-    /// A Component to manage and process queue of events.
+    /// Add events to the queue.
     /// </summary>
-    public class EventQueue : EventProcessor
+    /// <param name="evt">The events to add.</param>
+    public void Add(params EventProcessorEvent[] evt)
     {
+        Events.AddRange(evt);
+    }
 
-        #region Public Methods
+    /// <summary>
+    /// Push events into the front of the queue.
+    /// </summary>
+    /// <param name="evt">The events to push.</param>
+    public void Push(params EventProcessorEvent[] evt)
+    {
+        Events.InsertRange(0, evt);
+    }
 
-        /// <summary>
-        /// Add events to the queue.
-        /// </summary>
-        /// <param name="evt">The events to add.</param>
-        public void Add(params EventProcessorEvent[] evt)
+    public override void Update()
+    {
+        base.Update();
+
+        if (RunEvents)
         {
-            Events.AddRange(evt);
-        }
-
-        /// <summary>
-        /// Push events into the front of the queue.
-        /// </summary>
-        /// <param name="evt">The events to push.</param>
-        public void Push(params EventProcessorEvent[] evt)
-        {
-            Events.InsertRange(0, evt);
-        }
-
-        public override void Update()
-        {
-            base.Update();
-
-            if (RunEvents)
+            if (CurrentEvent == null)
             {
-                if (CurrentEvent == null)
+                NextEvent();
+            }
+
+            while (CurrentEvent != null)
+            {
+                if (isFreshEvent)
                 {
+                    isFreshEvent = false;
+                    CurrentEvent.EventProcessor = this;
+                    CurrentEvent.Start();
+                    CurrentEvent.Begin();
+                }
+
+                CurrentEvent.Update();
+                CurrentEvent.Timer += Entity.Game.DeltaTime;
+
+                if (CurrentEvent.IsFinished)
+                {
+                    isFreshEvent = true;
+                    CurrentEvent.End();
+                    CurrentEvent.EventProcessor = null;
+                    Events.Remove(CurrentEvent);
                     NextEvent();
                 }
-
-                while (CurrentEvent != null)
+                else
                 {
-                    if (isFreshEvent)
-                    {
-                        isFreshEvent = false;
-                        CurrentEvent.EventProcessor = this;
-                        CurrentEvent.Start();
-                        CurrentEvent.Begin();
-                    }
-
-                    CurrentEvent.Update();
-                    CurrentEvent.Timer += Entity.Game.DeltaTime;
-
-                    if (CurrentEvent.IsFinished)
-                    {
-                        isFreshEvent = true;
-                        CurrentEvent.End();
-                        CurrentEvent.EventProcessor = null;
-                        Events.Remove(CurrentEvent);
-                        NextEvent();
-                    }
-                    else
-                    {
-                        break;
-                    }
+                    break;
                 }
             }
         }
-
-        #endregion Public Methods
-
-        #region Private Methods
-
-        void NextEvent()
-        {
-            if (HasEvents)
-            {
-                CurrentEvent = Events[0];
-            }
-            else
-            {
-                CurrentEvent = null;
-            }
-        }
-
-        #endregion Private Methods
     }
+
+    #endregion Public Methods
+
+    #region Private Methods
+
+    private void NextEvent()
+    {
+        CurrentEvent = HasEvents ? Events[0] : null;
+    }
+
+    #endregion Private Methods
 }

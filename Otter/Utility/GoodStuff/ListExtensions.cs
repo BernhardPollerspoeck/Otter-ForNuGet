@@ -29,177 +29,179 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Otter.Utility.GoodStuff
+namespace Otter.Utility.GoodStuff;
+
+public static class ListExtensions
 {
-    public static class ListExtensions
+    [ThreadStatic]
+    private static System.Random randomNumberGenerator = new(DateTime.Now.Millisecond + System.Threading.Thread.CurrentThread.GetHashCode());
+
+    /// <summary>
+    /// Returns a sub-section of the current list, starting at the specified index and continuing to the end of the list.
+    /// </summary>
+    public static List<T> FromIndexToEnd<T>(this List<T> list, int start)
     {
-        [ThreadStatic]
-        static System.Random randomNumberGenerator = new Random(DateTime.Now.Millisecond + System.Threading.Thread.CurrentThread.GetHashCode());
+        return list.GetRange(start, list.Count - start);
+    }
 
-        /// <summary>
-        /// Returns a sub-section of the current list, starting at the specified index and continuing to the end of the list.
-        /// </summary>
-        public static List<T> FromIndexToEnd<T>(this List<T> list, int start)
+    /// <summary>
+    /// Returns the first index in the IList<T> where the target exists.  If the target cannot be found, returns -1.
+    /// </summary>
+    public static int IndexOf<T>(this IList<T> list, T target)
+    {
+        for (var i = 0; i < list.Count; ++i)
         {
-            return list.GetRange(start, list.Count - start);
-        }
-
-        /// <summary>
-        /// Returns the first index in the IList<T> where the target exists.  If the target cannot be found, returns -1.
-        /// </summary>
-        public static int IndexOf<T>(this IList<T> list, T target)
-        {
-            for (var i = 0; i < list.Count; ++i)
+            if (list[i].Equals(target))
             {
-                if (list[i].Equals(target)) return i;
+                return i;
             }
-            return -1;
+        }
+        return -1;
+    }
+
+    /// Returns a randomly selected item from IList<T>
+    public static T RandomElement<T>(this IList<T> list)
+    {
+        if (list.IsEmpty())
+        {
+            throw new IndexOutOfRangeException("Cannot retrieve a random value from an empty list");
         }
 
-        /// Returns a randomly selected item from IList<T>
-        public static T RandomElement<T>(this IList<T> list)
-        {
-            if (list.IsEmpty()) throw new IndexOutOfRangeException("Cannot retrieve a random value from an empty list");
+        return list[Rand.Int(list.Count)]; // Using Otter's RNG for consistency
+        //return list[randomNumberGenerator.Next(list.Count)];
+    }
 
-            return list[Rand.Int(list.Count)]; // Using Otter's RNG for consistency
-            //return list[randomNumberGenerator.Next(list.Count)];
+    /// <summary>
+    /// Returns a randomly selected item from IList or default.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="list"></param>
+    /// <returns></returns>
+    public static T RandomElementOrDefault<T>(this IList<T> list)
+    {
+        return list.IsEmpty() ? default : RandomElement(list);
+    }
+
+    /// Returns a randomly selected item from IList<T> determined by a IEnumerable<float> of weights
+    public static T RandomElement<T>(this IList<T> list, IEnumerable<float> weights)
+    {
+        if (list.IsEmpty())
+        {
+            throw new IndexOutOfRangeException("Cannot retrieve a random value from an empty list");
         }
 
-        /// <summary>
-        /// Returns a randomly selected item from IList or default.
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="list"></param>
-        /// <returns></returns>
-        public static T RandomElementOrDefault<T>(this IList<T> list)
+        if (list.Count != weights.Count())
         {
-            if (list.IsEmpty()) return default(T);
-
-            return RandomElement(list);
+            throw new IndexOutOfRangeException("List of weights must be the same size as input list");
         }
 
-        /// Returns a randomly selected item from IList<T> determined by a IEnumerable<float> of weights
-        public static T RandomElement<T>(this IList<T> list, IEnumerable<float> weights)
+        var randomWeight = randomNumberGenerator.NextDouble() * weights.Sum();
+        var totalWeight = 0f;
+        var index = 0;
+        foreach (var weight in weights)
         {
-            if (list.IsEmpty()) throw new IndexOutOfRangeException("Cannot retrieve a random value from an empty list");
-            if (list.Count != weights.Count()) throw new IndexOutOfRangeException("List of weights must be the same size as input list");
-
-            var randomWeight = randomNumberGenerator.NextDouble() * weights.Sum();
-            var totalWeight = 0f;
-            var index = 0;
-            foreach (var weight in weights)
+            totalWeight += weight;
+            if (randomWeight <= totalWeight)
             {
-                totalWeight += weight;
-                if (randomWeight <= totalWeight)
-                {
-                    break;
-                }
+                break;
             }
-
-            return list[index];
         }
 
-        public static IList<T> Shuffle<T>(this IList<T> list)
+        return list[index];
+    }
+
+    public static IList<T> Shuffle<T>(this IList<T> list)
+    {
+        // OrderBy and Sort are both broken for AOT compliation on older MonoTouch versions
+        // https://bugzilla.xamarin.com/show_bug.cgi?id=2155#c11
+        var shuffledList = new List<T>(list);
+        T temp;
+        for (var i = 0; i < shuffledList.Count; ++i)
         {
-            // OrderBy and Sort are both broken for AOT compliation on older MonoTouch versions
-            // https://bugzilla.xamarin.com/show_bug.cgi?id=2155#c11
-            var shuffledList = new List<T>(list);
-            T temp;
-            for (var i = 0; i < shuffledList.Count; ++i)
-            {
-                temp = shuffledList[i];
-                var swapIndex = randomNumberGenerator.Next(list.Count);
-                shuffledList[i] = shuffledList[swapIndex];
-                shuffledList[swapIndex] = temp;
-            }
-            return shuffledList;
+            temp = shuffledList[i];
+            var swapIndex = randomNumberGenerator.Next(list.Count);
+            shuffledList[i] = shuffledList[swapIndex];
+            shuffledList[swapIndex] = temp;
         }
+        return shuffledList;
+    }
 
-        public static IList<T> InPlaceShuffle<T>(this IList<T> list)
+    public static IList<T> InPlaceShuffle<T>(this IList<T> list)
+    {
+        // OrderBy and Sort are both broken for AOT compliation on older MonoTouch versions
+        // https://bugzilla.xamarin.com/show_bug.cgi?id=2155#c11
+
+        for (var i = 0; i < list.Count; ++i)
         {
-            // OrderBy and Sort are both broken for AOT compliation on older MonoTouch versions
-            // https://bugzilla.xamarin.com/show_bug.cgi?id=2155#c11
+            var temp = list[i];
+            var swapIndex = randomNumberGenerator.Next(list.Count);
+            list[i] = list[swapIndex];
+            list[swapIndex] = temp;
+        }
+        return list;
+    }
 
-            for (var i = 0; i < list.Count; ++i)
-            {
-                var temp = list[i];
-                var swapIndex = randomNumberGenerator.Next(list.Count);
-                list[i] = list[swapIndex];
-                list[swapIndex] = temp;
-            }
+    public static IList<T> InPlaceOrderBy<T, TKey>(this IList<T> list, Func<T, TKey> elementToSortValue) where TKey : IComparable
+    {
+        // Provides both and in-place sort as well as an AOT on iOS friendly replacement for OrderBy
+        if (list.Count < 2)
+        {
             return list;
         }
 
-        public static IList<T> InPlaceOrderBy<T, TKey>(this IList<T> list, Func<T, TKey> elementToSortValue) where TKey : IComparable
+        int startIndex;
+        int currentIndex;
+        int smallestIndex;
+        T temp;
+
+        for (startIndex = 0; startIndex < list.Count; ++startIndex)
         {
-            // Provides both and in-place sort as well as an AOT on iOS friendly replacement for OrderBy
-            if (list.Count < 2)
+            smallestIndex = startIndex;
+            for (currentIndex = startIndex + 1; currentIndex < list.Count; ++currentIndex)
             {
-                return list;
-            }
-
-            int startIndex;
-            int currentIndex;
-            int smallestIndex;
-            T temp;
-
-            for (startIndex = 0; startIndex < list.Count; ++startIndex)
-            {
-                smallestIndex = startIndex;
-                for (currentIndex = startIndex + 1; currentIndex < list.Count; ++currentIndex)
+                if (elementToSortValue(list[currentIndex]).CompareTo(elementToSortValue(list[smallestIndex])) < 0)
                 {
-                    if (elementToSortValue(list[currentIndex]).CompareTo(elementToSortValue(list[smallestIndex])) < 0)
-                    {
-                        smallestIndex = currentIndex;
-                    }
+                    smallestIndex = currentIndex;
                 }
-                temp = list[startIndex];
-                list[startIndex] = list[smallestIndex];
-                list[smallestIndex] = temp;
             }
-
-            return list;
+            temp = list[startIndex];
+            list[startIndex] = list[smallestIndex];
+            list[smallestIndex] = temp;
         }
 
-        /// <summary>
-        /// Attempts to Insert the item, but Adds it if the index is invalid.
-        /// </summary>
-        public static void InsertOrAdd<T>(this IList<T> list, int atIndex, T item)
+        return list;
+    }
+
+    /// <summary>
+    /// Attempts to Insert the item, but Adds it if the index is invalid.
+    /// </summary>
+    public static void InsertOrAdd<T>(this IList<T> list, int atIndex, T item)
+    {
+        if (atIndex >= 0 && atIndex < list.Count)
         {
-            if (atIndex >= 0 && atIndex < list.Count)
-            {
-                list.Insert(atIndex, item);
-            }
-            else
-            {
-                list.Add(item);
-            }
+            list.Insert(atIndex, item);
         }
-
-        /// <summary>
-        /// Returns the element after the given element. This can wrap. If the element is the only one in the list, itself is returned.
-        /// </summary>
-        public static T ElementAfter<T>(this IList<T> list, T element, bool wrap = true)
+        else
         {
-            var targetIndex = list.IndexOf(element) + 1;
-            if (wrap)
-            {
-                return targetIndex >= list.Count ? list[0] : list[targetIndex];
-            }
-            return list[targetIndex];
+            list.Add(item);
         }
+    }
 
-        /// <summary>
-        /// Returns the element before the given element. This can wrap. If the element is the only one in the list, itself is returned.
-        /// </summary>
-        public static T ElementBefore<T>(this IList<T> list, T element, bool wrap = true)
-        {
-            var targetIndex = list.IndexOf(element) - 1;
-            if (wrap)
-            {
-                return targetIndex < 0 ? list[list.Count - 1] : list[targetIndex];
-            }
-            return list[targetIndex];
-        }
+    /// <summary>
+    /// Returns the element after the given element. This can wrap. If the element is the only one in the list, itself is returned.
+    /// </summary>
+    public static T ElementAfter<T>(this IList<T> list, T element, bool wrap = true)
+    {
+        var targetIndex = list.IndexOf(element) + 1;
+        return wrap ? targetIndex >= list.Count ? list[0] : list[targetIndex] : list[targetIndex];
+    }
+
+    /// <summary>
+    /// Returns the element before the given element. This can wrap. If the element is the only one in the list, itself is returned.
+    /// </summary>
+    public static T ElementBefore<T>(this IList<T> list, T element, bool wrap = true)
+    {
+        var targetIndex = list.IndexOf(element) - 1;
+        return wrap ? targetIndex < 0 ? list[list.Count - 1] : list[targetIndex] : list[targetIndex];
     }
 }

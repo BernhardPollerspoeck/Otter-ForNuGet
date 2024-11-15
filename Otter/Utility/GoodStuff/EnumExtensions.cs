@@ -27,28 +27,27 @@
 
 using System;
 
-namespace Otter.Utility.GoodStuff
+namespace Otter.Utility.GoodStuff;
+
+public static class EnumExtensions
 {
-    public static class EnumExtensions
+    /// <summary>
+    /// Returns the next enum value wrapping to the first value if passed the last
+    /// </summary>
+    public static T Next<T>(this Enum enumValue)
     {
-        /// <summary>
-        /// Returns the next enum value wrapping to the first value if passed the last
-        /// </summary>
-        public static T Next<T>(this Enum enumValue)
+        var values = Enum.GetValues(enumValue.GetType());
+        var enumerator = values.GetEnumerator();
+        while (enumerator.MoveNext())
         {
-            var values = Enum.GetValues(enumValue.GetType());
-            var enumerator = values.GetEnumerator();
-            while (enumerator.MoveNext())
+            if (enumerator.Current.Equals(enumValue))
             {
-                if (enumerator.Current.Equals(enumValue))
+                if (enumerator.MoveNext())
                 {
-                    if (enumerator.MoveNext())
-                    {
-                        return (T)enumerator.Current;
-                    }
+                    return (T)enumerator.Current;
                 }
             }
-            return default(T);
         }
+        return default;
     }
 }

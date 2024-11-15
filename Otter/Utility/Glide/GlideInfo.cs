@@ -1,73 +1,75 @@
 using System;
 using System.Reflection;
 
-namespace Otter.Utility.Glide
+namespace Otter.Utility.Glide;
+
+internal class GlideInfo
 {
-    internal class GlideInfo
+    private static readonly BindingFlags flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
+
+    public string PropertyName { get; private set; }
+    public Type PropertyType { get; private set; }
+
+    private readonly FieldInfo field;
+    private readonly PropertyInfo prop;
+    private readonly object Target;
+
+    public object Value
     {
-        private static BindingFlags flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
+        get => field != null ?
+                field.GetValue(Target) :
+                prop.GetValue(Target, null);
 
-        public string PropertyName { get; private set; }
-        public Type PropertyType { get; private set; }
-
-        private FieldInfo field;
-        private PropertyInfo prop;
-        private object Target;
-
-        public object Value
+        set
         {
-            get
+            if (field != null)
             {
-                return field != null ?
-                    field.GetValue(Target) :
-                    prop.GetValue(Target, null);
-            }
-
-            set
-            {
-                if (field != null) field.SetValue(Target, value);
-                else prop.SetValue(Target, value, null);
-            }
-        }
-
-        public GlideInfo(object target, PropertyInfo info)
-        {
-            Target = target;
-            prop = info;
-            PropertyName = info.Name;
-            PropertyType = prop.PropertyType;
-        }
-
-        public GlideInfo(object target, FieldInfo info)
-        {
-            Target = target;
-            field = info;
-            PropertyName = info.Name;
-            PropertyType = info.FieldType;
-        }
-
-        public GlideInfo(object target, string property, bool writeRequired = true)
-        {
-            Target = target;
-            PropertyName = property;
-
-            var targetType = target as Type ?? target.GetType();
-
-            if ((field = targetType.GetField(property, flags)) != null)
-            {
-                PropertyType = field.FieldType;
-            }
-            else if ((prop = targetType.GetProperty(property, flags)) != null)
-            {
-                PropertyType = prop.PropertyType;
+                field.SetValue(Target, value);
             }
             else
             {
-                //	Couldn't find either
-                throw new Exception(string.Format("Field or {0} property '{1}' not found on object of type {2}.",
-                    writeRequired ? "read/write" : "readable",
-                    property, targetType.FullName));
+                prop.SetValue(Target, value, null);
             }
+        }
+    }
+
+    public GlideInfo(object target, PropertyInfo info)
+    {
+        Target = target;
+        prop = info;
+        PropertyName = info.Name;
+        PropertyType = prop.PropertyType;
+    }
+
+    public GlideInfo(object target, FieldInfo info)
+    {
+        Target = target;
+        field = info;
+        PropertyName = info.Name;
+        PropertyType = info.FieldType;
+    }
+
+    public GlideInfo(object target, string property, bool writeRequired = true)
+    {
+        Target = target;
+        PropertyName = property;
+
+        var targetType = target as Type ?? target.GetType();
+
+        if ((field = targetType.GetField(property, flags)) != null)
+        {
+            PropertyType = field.FieldType;
+        }
+        else if ((prop = targetType.GetProperty(property, flags)) != null)
+        {
+            PropertyType = prop.PropertyType;
+        }
+        else
+        {
+            //	Couldn't find either
+            throw new Exception(string.Format("Field or {0} property '{1}' not found on object of type {2}.",
+                writeRequired ? "read/write" : "readable",
+                property, targetType.FullName));
         }
     }
 }

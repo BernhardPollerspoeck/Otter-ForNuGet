@@ -1,9 +1,8 @@
-namespace Otter.Graphics.Text
+namespace Otter.Graphics.Text;
+
+public enum TextAlign
 {
-    public enum TextAlign
-    {
-        Left,
-        Right,
-        Center
-    }
+    Left,
+    Right,
+    Center
 }

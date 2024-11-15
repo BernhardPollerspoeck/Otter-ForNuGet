@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Otter\Otter.csproj" />
+    <PackageReference Include="Poller-OtterFork" Version="0.9.1" />
   </ItemGroup>
 
   <ItemGroup>
@@ -10,7 +10,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp3.0</TargetFramework>
+    <TargetFramework>net9.0</TargetFramework>
   </PropertyGroup>
 
 </Project>

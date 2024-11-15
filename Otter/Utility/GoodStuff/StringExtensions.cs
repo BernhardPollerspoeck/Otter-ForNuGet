@@ -29,73 +29,72 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace Otter.Utility.GoodStuff
+namespace Otter.Utility.GoodStuff;
+
+public static class StringExtensions
 {
-    public static class StringExtensions
+    /// <summary>
+    /// Interpolates the arguments into the string using string.Format
+    /// </summary>
+    /// <param name="formatString">The string to be interpolated into</param>
+    /// <param name="args">The values to be interpolated into the string </param>
+    public static string Interpolate(this string formatString, params object[] args)
     {
-        /// <summary>
-        /// Interpolates the arguments into the string using string.Format
-        /// </summary>
-        /// <param name="formatString">The string to be interpolated into</param>
-        /// <param name="args">The values to be interpolated into the string </param>
-        public static string Interpolate(this string formatString, params object[] args)
+        return string.Format(formatString, args);
+    }
+
+    /// <summary>
+    /// Alias for <see cref="Interpolate"/> for the typing averse
+    /// </summary>
+    /// <param name="formatString">The string to be interpolated into</param>
+    /// <param name="args">The values to be interpolated into the string </param>
+    public static string Fmt(this string formatString, params object[] args)
+    {
+        return Interpolate(formatString, args);
+    }
+
+    public static T ToEnum<T>(this string enumValueName)
+    {
+        return (T)Enum.Parse(typeof(T), enumValueName);
+    }
+
+    public static T ToEnum<T>(this string enumValueName, bool ignoreCase)
+    {
+        return (T)Enum.Parse(typeof(T), enumValueName, ignoreCase);
+    }
+
+    public static string Last(this string value, int count)
+    {
+        return count > value.Length
+            ? throw new ArgumentOutOfRangeException(string.Format("Cannot return more characters than exist in the string (wanted {0} string contains {1}", count, value.Length))
+            : value.Substring(value.Length - count, count);
+    }
+
+    public static string SnakeCase(this string camelizedString)
+    {
+        var parts = new List<string>();
+        var currentWord = new StringBuilder();
+
+        foreach (var c in camelizedString)
         {
-            return string.Format(formatString, args);
-        }
-
-        /// <summary>
-        /// Alias for <see cref="Interpolate"/> for the typing averse
-        /// </summary>
-        /// <param name="formatString">The string to be interpolated into</param>
-        /// <param name="args">The values to be interpolated into the string </param>
-        public static string Fmt(this string formatString, params object[] args)
-        {
-            return Interpolate(formatString, args);
-        }
-
-        public static T ToEnum<T>(this string enumValueName)
-        {
-            return (T)Enum.Parse(typeof(T), enumValueName);
-        }
-
-        public static T ToEnum<T>(this string enumValueName, bool ignoreCase)
-        {
-            return (T)Enum.Parse(typeof(T), enumValueName, ignoreCase);
-        }
-
-        public static string Last(this string value, int count)
-        {
-            if (count > value.Length) throw new ArgumentOutOfRangeException(string.Format("Cannot return more characters than exist in the string (wanted {0} string contains {1}", count, value.Length));
-
-            return value.Substring(value.Length - count, count);
-        }
-
-        public static string SnakeCase(this string camelizedString)
-        {
-            var parts = new List<string>();
-            var currentWord = new StringBuilder();
-
-            foreach (var c in camelizedString)
-            {
-                if (char.IsUpper(c) && currentWord.Length > 0)
-                {
-                    parts.Add(currentWord.ToString());
-                    currentWord = new StringBuilder();
-                }
-                currentWord.Append(char.ToLower(c));
-            }
-
-            if (currentWord.Length > 0)
+            if (char.IsUpper(c) && currentWord.Length > 0)
             {
                 parts.Add(currentWord.ToString());
+                currentWord = new StringBuilder();
             }
-
-            return string.Join("_", parts.ToArray());
+            currentWord.Append(char.ToLower(c));
         }
 
-        public static string Capitalize(this string word)
+        if (currentWord.Length > 0)
         {
-            return word.Substring(0, 1).ToUpper() + word.Substring(1);
+            parts.Add(currentWord.ToString());
         }
+
+        return string.Join("_", parts.ToArray());
+    }
+
+    public static string Capitalize(this string word)
+    {
+        return word[..1].ToUpper() + word[1..];
     }
 }

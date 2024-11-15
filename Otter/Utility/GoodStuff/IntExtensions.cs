@@ -27,106 +27,105 @@
 
 using System;
 
-namespace Otter.Utility.GoodStuff
+namespace Otter.Utility.GoodStuff;
+
+public static class IntExtensions
 {
-    public static class IntExtensions
+    /// <summary>
+    /// Calls the provided callback action repeatedly.
+    /// </summary>
+    /// <description>
+    /// Used to invoke an action a fixed number of times.
+    ///
+    /// 5.Times(() => Console.WriteLine("Hey!"));
+    ///
+    /// is the equivalent of
+    ///
+    /// for(var i = 0; i < 5; i++) {
+    ///     Console.WriteLine("Hey!");
+    /// }
+    /// </description>
+    public static void Times(this int iterations, Action callback)
     {
-        /// <summary>
-        /// Calls the provided callback action repeatedly.
-        /// </summary>
-        /// <description>
-        /// Used to invoke an action a fixed number of times.
-        ///
-        /// 5.Times(() => Console.WriteLine("Hey!"));
-        ///
-        /// is the equivalent of
-        ///
-        /// for(var i = 0; i < 5; i++) {
-        ///     Console.WriteLine("Hey!");
-        /// }
-        /// </description>
-        public static void Times(this int iterations, Action callback)
+        for (var i = 0; i < iterations; ++i)
         {
-            for (var i = 0; i < iterations; ++i)
-            {
-                callback();
-            }
+            callback();
         }
+    }
 
-        /// <summary>
-        /// Calls the provided callback action repeatedly passing in the current value of i
-        /// </summary>
-        /// <description>
-        /// Used to invoke an action a fixed number of times.
-        ///
-        /// 5.Times(i => Console.WriteLine("Hey # " + i));
-        ///
-        /// is the equivalent of
-        ///
-        /// for(var i = 0; i < 5; i++) {
-        ///     Console.WriteLine("Hey # " + i);
-        /// }
-        /// </description>
-        public static void Times(this int iterations, Action<int> callback)
+    /// <summary>
+    /// Calls the provided callback action repeatedly passing in the current value of i
+    /// </summary>
+    /// <description>
+    /// Used to invoke an action a fixed number of times.
+    ///
+    /// 5.Times(i => Console.WriteLine("Hey # " + i));
+    ///
+    /// is the equivalent of
+    ///
+    /// for(var i = 0; i < 5; i++) {
+    ///     Console.WriteLine("Hey # " + i);
+    /// }
+    /// </description>
+    public static void Times(this int iterations, Action<int> callback)
+    {
+        for (var i = 0; i < iterations; ++i)
         {
-            for (var i = 0; i < iterations; ++i)
-            {
-                callback(i);
-            }
+            callback(i);
         }
+    }
 
-        /// <summary>
-        /// Iterates from the start up to the given end value inclusive, calling the provided callback with each value in the sequence.
-        /// </summary>
-        /// <description>
-        /// Used to iterate from a start value to a target value
-        ///
-        /// 0.UpTo(5, i => Console.WriteLine(i));
-        ///
-        /// is the equivalent of
-        ///
-        /// for(var i = 0; i <= 5; i++) {
-        ///     Console.WriteLine(i);
-        /// }
-        /// </description>
-        public static void UpTo(this int value, int endValue, Action<int> callback)
+    /// <summary>
+    /// Iterates from the start up to the given end value inclusive, calling the provided callback with each value in the sequence.
+    /// </summary>
+    /// <description>
+    /// Used to iterate from a start value to a target value
+    ///
+    /// 0.UpTo(5, i => Console.WriteLine(i));
+    ///
+    /// is the equivalent of
+    ///
+    /// for(var i = 0; i <= 5; i++) {
+    ///     Console.WriteLine(i);
+    /// }
+    /// </description>
+    public static void UpTo(this int value, int endValue, Action<int> callback)
+    {
+        for (var i = value; i <= endValue; ++i)
         {
-            for (var i = value; i <= endValue; ++i)
-            {
-                callback(i);
-            }
+            callback(i);
         }
+    }
 
-        /// <summary>
-        /// Iterates from the start down to the given end value inclusive, calling the provided callback with each value in the sequence.
-        /// </summary>
-        /// <description>
-        /// Used to iterate from a start value to a target value
-        ///
-        /// 5.DownTo(0, i => Console.WriteLine(i));
-        ///
-        /// is the equivalent of
-        ///
-        /// for(var i = 5; i >= 0; i++) {
-        ///     Console.WriteLine(i);
-        /// }
-        /// </description>
-        public static void DownTo(this int value, int endValue, Action<int> callback)
+    /// <summary>
+    /// Iterates from the start down to the given end value inclusive, calling the provided callback with each value in the sequence.
+    /// </summary>
+    /// <description>
+    /// Used to iterate from a start value to a target value
+    ///
+    /// 5.DownTo(0, i => Console.WriteLine(i));
+    ///
+    /// is the equivalent of
+    ///
+    /// for(var i = 5; i >= 0; i++) {
+    ///     Console.WriteLine(i);
+    /// }
+    /// </description>
+    public static void DownTo(this int value, int endValue, Action<int> callback)
+    {
+        for (var i = value; i >= endValue; --i)
         {
-            for (var i = value; i >= endValue; --i)
-            {
-                callback(i);
-            }
+            callback(i);
         }
+    }
 
-        public static bool IsEven(this int value)
-        {
-            return value % 2 == 0;
-        }
+    public static bool IsEven(this int value)
+    {
+        return value % 2 == 0;
+    }
 
-        public static bool IsOdd(this int value)
-        {
-            return value % 2 == 1;
-        }
+    public static bool IsOdd(this int value)
+    {
+        return value % 2 == 1;
     }
 }

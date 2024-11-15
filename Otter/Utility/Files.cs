@@ -1,120 +1,104 @@
 using System.Collections.Generic;
 using System.IO;
 
-namespace Otter.Utility
+namespace Otter.Utility;
+
+/// <summary>
+/// Manages files used for game assets.  Can use a packed data file of paths and byte arrays.
+/// The game will attempt to use local files before the packed data file.
+/// Packed data is expected as:
+/// bool: true to continue reading, false to stop
+/// string: the path of the file that was packed
+/// int32: the size of the file that was packed
+/// bytes: the actual data from the file
+/// </summary>
+public class Files
 {
     /// <summary>
-    /// Manages files used for game assets.  Can use a packed data file of paths and byte arrays.
-    /// The game will attempt to use local files before the packed data file.
-    /// Packed data is expected as:
-    /// bool: true to continue reading, false to stop
-    /// string: the path of the file that was packed
-    /// int32: the size of the file that was packed
-    /// bytes: the actual data from the file
+    /// The unpacked data from a packed data file.  File paths mapped to byte arrays.
     /// </summary>
-    public class Files
+    public static Dictionary<string, byte[]> Data { get; set; } = [];
+
+    /// <summary>
+    /// The root folder that assets can be found in when loading data.
+    /// </summary>
+    public static string AssetsFolderPrefix { get; set; } = "Assets/";
+
+    /// <summary>
+    /// Reads data from a uncompressed packed file
+    /// </summary>
+    /// <param name="path">The path to the packed data file.</param>
+    public static void LoadPackedData(string path)
     {
-        /// <summary>
-        /// The unpacked data from a packed data file.  File paths mapped to byte arrays.
-        /// </summary>
-        public static Dictionary<string, byte[]> Data = new Dictionary<string, byte[]>();
-
-        /// <summary>
-        /// The root folder that assets can be found in when loading data.
-        /// </summary>
-        public static string AssetsFolderPrefix = "Assets/";
-
-        /// <summary>
-        /// Reads data from a uncompressed packed file
-        /// </summary>
-        /// <param name="path">The path to the packed data file.</param>
-        public static void LoadPackedData(string path)
+        path = FileHandling.GetAbsoluteFilePath(path);
+        if (!File.Exists(path))
         {
-            path = FileHandling.GetAbsoluteFilePath(path);
-            if (!File.Exists(path)) throw new FileNotFoundException("Cannot find packed data file " + path);
-
-            Data.Clear();
-            var bytes = new BinaryReader(File.Open(path, FileMode.Open));
-            int length = (int)bytes.BaseStream.Length;
-            var reading = bytes.ReadBoolean();
-
-            while (reading)
-            {
-                var filepath = bytes.ReadString();
-                var fileSize = bytes.ReadInt32();
-                var data = bytes.ReadBytes(fileSize);
-
-                Data.Add(filepath, data);
-                //Console.WriteLine("Reading data {0}", filepath);
-                reading = bytes.ReadBoolean();
-            }
+            throw new FileNotFoundException("Cannot find packed data file " + path);
         }
 
-        /// <summary>
-        /// Check if a file exists, or if it has been loaded from the packed data.
-        /// </summary>
-        /// <param name="path">The path to check.</param>
-        /// <returns>True if the file exists or if it has been loaded from the packed data.</returns>
-        public static bool FileExists(string path)
-        {
-            path = FileHandling.GetAbsoluteFilePath(path);
-            if (File.Exists(path)) return true;
-            if (File.Exists(AssetsFolderPrefix + path)) return true;
-            if (Data.ContainsKey(path)) return true;
-            return false;
-        }
+        Data.Clear();
+        var bytes = new BinaryReader(File.Open(path, FileMode.Open));
+        var reading = bytes.ReadBoolean();
 
-        /// <summary>
-        /// Load a file as a memory stream from local files or packed data.
-        /// Probably don't use this a lot it probably is memory leak city.
-        /// </summary>
-        /// <param name="path">The path to load from.</param>
-        /// <returns>The stream.</returns>
-        public static Stream LoadFileStream(string path)
+        while (reading)
         {
-            path = FileHandling.GetAbsoluteFilePath(path);
-            if (FileExists(path))
-            {
-                return new MemoryStream(LoadFileBytes(path));
-            }
-            return null;
-        }
+            var filepath = bytes.ReadString();
+            var fileSize = bytes.ReadInt32();
+            var data = bytes.ReadBytes(fileSize);
 
-        /// <summary>
-        /// Load a file as a byte array from local files or packed data.
-        /// </summary>
-        /// <param name="path">The path to load from.</param>
-        /// <returns>The byte array of the data from the file.</returns>
-        public static byte[] LoadFileBytes(string path)
-        {
-            path = FileHandling.GetAbsoluteFilePath(path);
-            if (File.Exists(path))
-            {
-                return File.ReadAllBytes(path);
-            }
-            if (File.Exists(AssetsFolderPrefix + path))
-            {
-                return File.ReadAllBytes(AssetsFolderPrefix + path);
-            }
-            if (Data.ContainsKey(path))
-            {
-                return Data[path];
-            }
-            return null;
+            Data.Add(filepath, data);
+            //Console.WriteLine("Reading data {0}", filepath);
+            reading = bytes.ReadBoolean();
         }
+    }
 
-        /// <summary>
-        /// Check if a file is being loaded from a local file or the packed data.
-        /// Note that the game will attempt to load from local files before packed data.
-        /// </summary>
-        /// <param name="path">The path to check.</param>
-        /// <returns>True if the data is coming from the packed file.</returns>
-        public static bool IsUsingDataPack(string path)
-        {
-            path = FileHandling.GetAbsoluteFilePath(path);
-            if (File.Exists(path)) return false;
-            if (File.Exists(AssetsFolderPrefix + path)) return false;
-            return Data.ContainsKey(path);
-        }
+    /// <summary>
+    /// Check if a file exists, or if it has been loaded from the packed data.
+    /// </summary>
+    /// <param name="path">The path to check.</param>
+    /// <returns>True if the file exists or if it has been loaded from the packed data.</returns>
+    public static bool FileExists(string path)
+    {
+        path = FileHandling.GetAbsoluteFilePath(path);
+        return File.Exists(path) || File.Exists(AssetsFolderPrefix + path) || Data.ContainsKey(path);
+    }
+
+    /// <summary>
+    /// Load a file as a memory stream from local files or packed data.
+    /// Probably don't use this a lot it probably is memory leak city.
+    /// </summary>
+    /// <param name="path">The path to load from.</param>
+    /// <returns>The stream.</returns>
+    public static Stream LoadFileStream(string path)
+    {
+        path = FileHandling.GetAbsoluteFilePath(path);
+        return FileExists(path) ? new MemoryStream(LoadFileBytes(path)) : (Stream)null;
+    }
+
+    /// <summary>
+    /// Load a file as a byte array from local files or packed data.
+    /// </summary>
+    /// <param name="path">The path to load from.</param>
+    /// <returns>The byte array of the data from the file.</returns>
+    public static byte[] LoadFileBytes(string path)
+    {
+        path = FileHandling.GetAbsoluteFilePath(path);
+        return File.Exists(path)
+            ? File.ReadAllBytes(path)
+            : File.Exists(AssetsFolderPrefix + path)
+                ? File.ReadAllBytes(AssetsFolderPrefix + path)
+                : Data.TryGetValue(path, out var value) ? value : null;
+    }
+
+    /// <summary>
+    /// Check if a file is being loaded from a local file or the packed data.
+    /// Note that the game will attempt to load from local files before packed data.
+    /// </summary>
+    /// <param name="path">The path to check.</param>
+    /// <returns>True if the data is coming from the packed file.</returns>
+    public static bool IsUsingDataPack(string path)
+    {
+        path = FileHandling.GetAbsoluteFilePath(path);
+        return !File.Exists(path) && !File.Exists(AssetsFolderPrefix + path) && Data.ContainsKey(path);
     }
 }

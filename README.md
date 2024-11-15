@@ -1,3 +1,8 @@
+DISCLAIMER:
+I did fork the repo to port it to netX and release a NuGet. I did no actual work on this project. all the credits for this amzing lob go towards the original Creator!
+
+
+
 ![Otter](https://bytebucket.org/kylepulver/otter/raw/f5854841bf69eba2f1d99b00f50694c605637a32/otterlogo.png)
 # Otter #
 

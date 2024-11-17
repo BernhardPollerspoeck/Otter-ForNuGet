@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <PackageReference Include="Poller-OtterFork" Version="0.9.1" />
+    <PackageReference Include="Poller-OtterFork" Version="0.9.8" />
   </ItemGroup>
 
   <ItemGroup>

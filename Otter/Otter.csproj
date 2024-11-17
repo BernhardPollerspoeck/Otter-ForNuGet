@@ -6,18 +6,27 @@
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageId>Poller-OtterFork</PackageId>
   </PropertyGroup>
-  
+
   <ItemGroup>
     <Compile Remove="nupkgs\**" />
     <EmbeddedResource Remove="nupkgs\**" />
     <None Remove="nupkgs\**" />
   </ItemGroup>
-  
+
   <ItemGroup>
-    <None Update="CONSOLA.TTF" CopyToOutputDirectory="PreserveNewest" />
-    <None Update="otterlogo.png" CopyToOutputDirectory="PreserveNewest" />
+    <None Remove="CONSOLA.TTF" />
+    <None Remove="otterlogo.png" />
   </ItemGroup>
-  
+
+  <ItemGroup>
+    <Content Include="CONSOLA.TTF">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="otterlogo.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="SFML.Net" Version="2.5.0" />
   </ItemGroup>
